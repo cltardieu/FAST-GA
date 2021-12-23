@@ -34,7 +34,7 @@ class AbstractHybridPropulsion(IPropulsionCS23, ABC):
         return time_step * flight_point.sfc * flight_point.thrust
 
     def get_consumed_energy(self, flight_point: FlightPoint, time_step: float) -> float:
-        return time_step * flight_point.power / 1000
+        return time_step * flight_point.battery_power
 
     @abstractmethod
     def compute_dimensions(self):

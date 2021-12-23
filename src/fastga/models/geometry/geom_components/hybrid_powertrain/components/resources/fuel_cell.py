@@ -18,7 +18,7 @@ import math as math
 # Update the dictionary so that is includes more specific values and maybe parameters such as stack area, cell area...
 FuelCellTypes = {
     'POWERCELLUTION_V_STACK': {  # Reference fuel cell
-        'HYD_STOIC_RATIO': 1.5,
+        'HYD_STOICH_RATIO': 1.5,
         'OX_STOICH_RATIO': 2,
         'P_NOM': 10000,  # [Pa]
         'STACK_AREA': 759.50  # [cm**2]
@@ -48,25 +48,25 @@ class FuelCell(object):
                  nom_pressure: float,
                  stack_area: float,
                  compressor_power: float = 0,
-                 fc_type: str = '',
+                 fc_type: int = 0,
                  number_stacks: int = 2):
 
         # If a type of FC has been specified, some parameters are set to those of the data in FuelCellTypes
-        if fc_type in FuelCellTypes:
-            # Retrieving data from the dictionary
-            self.data = FuelCellTypes[f'{fc_type}']
-            self.stack_area = self.data['STACK_AREA']
-            self.nom_pressure = self.data['P_NOM']
-        else:
+        self.data = FuelCellTypes['POWERCELLUTION_V_STACK']  # Using data of the reference FC for now
+        if fc_type == 0:
             self.nom_pressure = nom_pressure
             self.stack_area = stack_area
+        else:  # Type '1'
+            # Retrieving data from the dictionary
+            # self.data = FuelCellTypes[f'{fc_type}']
+            self.stack_area = self.data['STACK_AREA']
+            self.nom_pressure = self.data['P_NOM']
 
         self.stack_current = stack_current
         self.required_power = required_power
         self.compressor_power = compressor_power
         self.stack_pressure = stack_pressure
         self.nb_stacks = number_stacks
-
 
     @staticmethod
     def compute_fc_weight(cell_number: int):
@@ -80,17 +80,17 @@ class FuelCell(object):
         """
         return cell_number * 0.103 + 8.762  # [kg]
 
-    @staticmethod
-    def compute_fc_height(cell_number: int):
+    def compute_fc_height(self, cell_number: int):
         """
-        Computes the height of the fuel cell stack(s) given the total number of cells.
-        It is assumed that weight can be described as a linear function of the number of cells of parameters :
+        Computes the height of a single fuel cell stack given the total number of cells and the number of stacks.
+        It is assumed that height can be described as a linear function of the number of cells of parameters :
             a = 1.3907657657657655
             b = 91.5081081081081
         Those parameters are based on data retrieved from the PowerCellution V Stack fuel cell :
             https://www.datocms-assets.com/36080/1611437781-v-stack.pdf.
         """
-        return (cell_number * 1.39 + 91.51) / 10  # [cm]
+        stack_cell_nb = math.ceil(cell_number / self.nb_stacks)
+        return (stack_cell_nb * 1.39 + 91.51) / 10  # [cm]
 
     def compute_fc_volume(self, cell_number: int):
         """
@@ -104,11 +104,11 @@ class FuelCell(object):
     def compute_design_power(self):
         """
         Computes the total required power of the fuel cell system.
-        Since is used as a means of propulsion (not an APU), a 1.5 sizing factor is introduced based on :
+        Since it is used as a means of propulsion (not an APU), a 1.5 sizing factor is introduced based on :
             https://www.researchgate.net/publication/319935703.
         """
         sizing_factor = 1.5
-        return sizing_factor * (self.compressor_power + self.required_power)
+        return sizing_factor * (self.compressor_power + self.required_power)  # [W]
 
     def compute_design_current_density(self):
         """
@@ -116,17 +116,15 @@ class FuelCell(object):
         """
         return self.stack_current / self.stack_area
 
-    def compute_cell_nb(self):
+    def compute_nb_cell(self):
         """
-        Computes the number of cell needed considering required power + compressor power, stack current and cell
-        design voltage. In the first step of the loop, compressor power may not be specified yet and is therefore
-        taken at 0 kJ.
+        Computes the number of cell needed considering design power of the FC system.
         """
         # Determining one cell's design power
         P_cell_des = self.stack_current * self.compute_cell_V()
 
         # Determining total required power
-        tot_power = self.compute_design_power
+        tot_power = self.compute_design_power()
 
         # Returning the number of cells
         N_fc = math.ceil(tot_power / P_cell_des)
@@ -160,11 +158,13 @@ class FuelCell(object):
         electricity is produced as heat.
         Based on the work done in FAST-GA-AMPERE.
         """
-        H2_ed = 34100  # [Wh/kg] - Hydrogen energy density
-        H2_mass_flow = self.compute_hyd_mass_flow()  # [kg/s]
-        eff = self.compute_efficiency()
+        # H2_ed = 34100.0  # [Wh/kg] - Hydrogen energy density
+        # H2_mass_flow = self.compute_hyd_mass_flow()  # [kg/s]
+        # eff = self.compute_ref_efficiency()
+        #
+        # P_cooling = (H2_mass_flow * 3600.0 * H2_ed) * (1.0 - eff)
 
-        P_cooling = (H2_mass_flow * 3600 * H2_ed) * (1 - eff)
+        P_cooling = self.compute_design_power() / self.compute_ref_efficiency() - self.compute_design_power()
         return P_cooling
 
     def compute_hyd_mass_flow(self):
@@ -174,11 +174,11 @@ class FuelCell(object):
         """
         # Defining constants
         M_H2 = 2.016  # [g/mol]
-        stoich_ratio = self.fc_data['HYD_STOICH_RATIO']  # Hydrogen stoichiometric ratio for the chosen FC
-        F = 96, 485  # [C/mol] - Faraday Constant
+        stoich_ratio = self.data['HYD_STOICH_RATIO']  # Hydrogen stoichiometric ratio for the chosen FC
+        F = 96.485  # [C/mol] - Faraday Constant
 
-        hyd_mass_flow = M_H2 * self.required_power * stoich_ratio / (2 * self.compute_cell_V() * F)  # [kg/s]
-        return hyd_mass_flow
+        hyd_mass_flow = M_H2 * self.required_power * stoich_ratio / (2 * self.compute_cell_V() * F)  # [g/s]
+        return hyd_mass_flow / 1000  # [kg/s]
 
     def compute_ox_mass_flow(self):
         """
@@ -187,11 +187,11 @@ class FuelCell(object):
         """
         # Defining constants
         M_O2 = 31.998  # [g/mol]
-        stoich_ratio = self.fc_data['OX_STOICH_RATIO']  # Oxygen stoichiometric ratio for the chosen FC
+        stoich_ratio = self.data['OX_STOICH_RATIO']  # Oxygen stoichiometric ratio for the chosen FC
         F = 96.485  # [C/mol] - Faraday Constant
 
-        ox_mass_flow = M_O2 * self.required_power * stoich_ratio / (4 * self.compute_cell_V() * F)  # [kg/s]
-        return ox_mass_flow
+        ox_mass_flow = M_O2 * self.required_power * stoich_ratio / (4 * self.compute_cell_V() * F)  # [g/s]
+        return ox_mass_flow / 1000  # [kg/s]
 
     def compute_ref_efficiency(self):
         """
@@ -215,10 +215,11 @@ class FuelCell(object):
     def compute_efficiency(self):
         """
         Calculates the efficiency of the fuel cell system using a more generic formula.
+        Not used at the moment because provides very low values.
         """
         # Defining constants
-        H2_ed = 34100  # [Wh/kg] - Hydrogen energy density
+        H2_ed = 34100.0  # [Wh/kg] - Hydrogen energy density
 
         # Determining efficiency
-        eff = self.compute_design_power() / (self.compute_hyd_mass_flow() * 3600 * H2_ed)
+        eff = self.compute_design_power() / (self.compute_hyd_mass_flow() * 3600.0 * H2_ed)
         return eff

@@ -15,7 +15,7 @@
 
 import openmdao.api as om
 import numpy as np
-from fastoad.model_base import atmosphere
+from stdatm.atmosphere import Atmosphere
 
 
 class ComputeHex(om.ExplicitComponent):
@@ -24,13 +24,14 @@ class ComputeHex(om.ExplicitComponent):
     Based on :
         - work done in FAST-GA-AMPERE
         - https://apps.dtic.mil/sti/pdfs/ADA525161.pdf
+    The HEX subsystem cools the waste water-air mixture produced by the fuel cell stacks.
     """
 
     def setup(self):
 
         self.add_input("data:propulsion:hybrid_powertrain:hex:air_speed", val=np.nan, units='m/s')
         self.add_input("data:propulsion:hybrid_powertrain:fuel_cell:operating_temperature", val=np.nan, units='K')
-        self.add_input("data:geometry:hybrid_powertrain:hex:radiator_surface_density", val=np.nan, units='kg/m**2')
+        self.add_input("data:geometry:hybrid_powertrain:hex:radiator_surface_density", val=np.nan, units='g/cm**2')
         self.add_input("data:propulsion:hybrid_powertrain:fuel_cell:cooling_power", val=np.nan, units='W')
         self.add_input("data:mission:sizing:main_route:cruise:altitude", val=np.nan, units='m')
 
@@ -42,21 +43,20 @@ class ComputeHex(om.ExplicitComponent):
     def compute(self, inputs, outputs, discrete_inputs=None, discrete_outputs=None):
         air_speed = inputs['data:propulsion:hybrid_powertrain:hex:air_speed']
         op_T = inputs['data:propulsion:hybrid_powertrain:fuel_cell:operating_temperature']
-        surface_density = inputs['data:propulsion:hybrid_powertrain:hex:surface_density']
+        surface_density = inputs['data:geometry:hybrid_powertrain:hex:radiator_surface_density']
         fc_cooling_power = inputs['data:propulsion:hybrid_powertrain:fuel_cell:cooling_power']
-        ext_T = atmosphere(altitude=inputs['data:performances:he_mission:cruise_altitude']).temperature  # [K]
+        ext_T = Atmosphere(altitude=inputs['data:mission:sizing:main_route:cruise:altitude']).temperature  # [K]
 
         # Determining temperature gap and dissipative power of the CHE
         delta_T = op_T - ext_T
-        h = 1269.0 * air_speed + 99.9  # [W/(m**2K)] - Heat Transfer Coefficient used in FAST-GA-AMPERE
-        # h = 5000  # Or value of 5000
+        h = 1269.0 * air_speed + 99.9  # [W/(m**2K)] - Heat Transfer Coefficient used in FAST-GA-AMPERE - Based on a
+        # correlation described in 'Design upgrade and Performance assessment of the AMPERE Distributed Electric
+        # Propulsion concept' - F. Lutz
 
         # Determining surface of the radiator
         needed_area = fc_cooling_power / (h * delta_T)  # [m**2]
         outputs['data:geometry:hybrid_powertrain:hex:area'] = needed_area
 
         # Determining mass of the radiator
-        M_rad = needed_area * surface_density
+        M_rad = needed_area * 10000 * surface_density
         outputs['data:weight:hybrid_powertrain:hex:radiator_mass'] = M_rad
-
-        # Size the intakes here as in FAST-GA-AMPERE ?

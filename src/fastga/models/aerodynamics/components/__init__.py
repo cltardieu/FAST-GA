@@ -23,3 +23,4 @@ from .compute_cy_rudder import ComputeCyDeltaRudder
 from .clalpha_vt import ComputeClAlphaVT
 from .compute_vn import ComputeVNAndVH, ComputeVN
 from .compute_cm_alpha_fus import ComputeFuselagePitchingMoment
+from .compute_propeller_aero import _ComputePropellerPerformance, ComputePropellerPerformance

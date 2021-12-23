@@ -21,3 +21,4 @@ from .compute_fuel_cells import ComputeFuelCells
 from .compute_h2_storage import ComputeH2Storage
 from .compute_hex import ComputeHex
 from .compute_inverter import ComputeInverter
+from .compute_intakes import ComputeIntakes

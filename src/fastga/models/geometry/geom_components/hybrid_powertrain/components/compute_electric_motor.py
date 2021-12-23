@@ -49,17 +49,17 @@ class ComputeElectricMotor(om.ExplicitComponent):
         self.winding_temp_ref = 120  # [°C]
 
     def setup(self):
-        self.add_input("data:propulsion:hybrid_powertrain:motor:nominal_torque", val=np.nan, units="Nm")
+        self.add_input("data:propulsion:hybrid_powertrain:motor:nominal_torque", val=np.nan, units="N*m")
 
         self.add_output("data:geometry:hybrid_powertrain:motor:length", units="m")
         self.add_output("data:geometry:hybrid_powertrain:motor:diameter", units="m")
-        self.add_output("data:weight:propulsion:motor:mass", units="kg")
-        self.add_output("data:geometry:hybrid_powertrain:motor:alpha",
+        self.add_output("data:weight:hybrid_powertrain:motor:mass", units="kg")
+        self.add_output("data:propulsion:hybrid_powertrain:motor:alpha",
                         units=None)  # Actual unit "W/((N*m)**2)", None entered to avoid error
-        self.add_output("data:geometry:hybrid_powertrain:motor:beta",
+        self.add_output("data:propulsion:hybrid_powertrain:motor:beta",
                         units=None)  # Actual unit "W/(rad/s)**1.5)", None entered to avoid error
-        self.add_output("data:geometry:hybrid_powertrain:motor:speed", units="rpm")
-        self.add_output("data:geometry:hybrid_powertrain:motor:peak_torque", units='Nm')
+        self.add_output("data:propulsion:hybrid_powertrain:motor:speed", units="rpm")
+        self.add_output("data:propulsion:hybrid_powertrain:motor:peak_torque", units='N*m')
 
         self.declare_partials('*', '*', method="fd")
 
@@ -103,29 +103,8 @@ class ComputeElectricMotor(om.ExplicitComponent):
 
         outputs["data:geometry:hybrid_powertrain:motor:length"] = mot_length
         outputs["data:geometry:hybrid_powertrain:motor:diameter"] = mot_dia
-        outputs["data:weight:propulsion:motor:mass"] = mot_mass
-        outputs["data:geometry:hybrid_powertrain:motor:alpha"] = mot_alpha
-        outputs["data:geometry:hybrid_powertrain:motor:beta"] = mot_beta
-        outputs["data:geometry:hybrid_powertrain:motor:speed"] = mot_omega_max_abs
-        outputs['data:geometry:hybrid_powertrain:motor:peak_torque'] = mot_peak_torque
-
-# class ComputeElectricMotorV2(om.ExplicitComponent):
-#     """ Discipline that computes the electric brushless motor based on the method described in - Design upgrade and
-#     Performance assessment of the AMPERE Distributed Electric Propulsion concept - F. Lutz. """
-#
-#     def setup(self):
-#
-#         self.add_input("data:propulsion:hybrid_powertrain:motor:input_power", val=np.nan, units='W')
-#         self.add_input("data:propulsion:hybrid_powertrain:motor:stator_resistance", val=np.nan, units='ohm')
-#         self.add_input("data:propulsion:hybrid_powertrain:motor:rotor_resistance", val=np.nan, units='ohm')
-#         self.add_input("data:propulsion:hybrid_powertrain:motor:slip", val=np.nan, units=None)
-#
-#     def compute(self, inputs, outputs, discrete_inputs=None, discrete_outputs=None):
-#         in_power = inputs['data:propulsion:hybrid_powertrain:motor:input_power']
-#         stator_res = inputs['data:propulsion:hybrid_powertrain:motor:stator_resistance']
-#         rotor_res = inputs['data:propulsion:hybrid_powertrain:motor:rotor_resistance']
-#         slip = inputs['data:propulsion:hybrid_powertrain:motor:slip']
-#
-#         Is = math.sqrt(in_power / (rotor_res + stator_res / slip))  # [A] - Equivalent current in the motor
-#
-#         P_losses = (rotor_res + stator_res) * Is ** 2
+        outputs["data:weight:hybrid_powertrain:motor:mass"] = mot_mass
+        outputs["data:propulsion:hybrid_powertrain:motor:alpha"] = mot_alpha
+        outputs["data:propulsion:hybrid_powertrain:motor:beta"] = mot_beta
+        outputs["data:propulsion:hybrid_powertrain:motor:speed"] = mot_omega_max_abs
+        outputs['data:propulsion:hybrid_powertrain:motor:peak_torque'] = mot_peak_torque

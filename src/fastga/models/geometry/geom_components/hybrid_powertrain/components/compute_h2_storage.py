@@ -16,10 +16,12 @@
 import openmdao.api as om
 import numpy as np
 import math
+from stdatm.atmosphere import Atmosphere
+
 
 class ComputeH2Storage(om.ExplicitComponent):
     """
-    For general aviation applications, 700 bar gaseous hydrogen storage methods are considered.
+    For general aviation applications, 350 bar gaseous hydrogen storage methods are considered.
     Cylindrical tanks are computed.
     Code is based on the work done in 'FAST-GA-AMPERE' and on the storage model found here :
         https://www.researchgate.net/publication/24316784_Hydrogen_Storage_for_Aircraft_Applications_Overview
@@ -27,13 +29,14 @@ class ComputeH2Storage(om.ExplicitComponent):
 
     def setup(self):
         self.add_input("data:propulsion:hybrid_powertrain:fuel_cell:cell_voltage", val=np.nan, units='V')
-        self.add_input("data:propulsion:hybrid_powertrain:fuel_cell:design_power", val=np.nan, units='kJ')
-        self.add_input("data:mission:sizing:main_route:reserve:duration", val=np.nan, units='h')
+        self.add_input("data:propulsion:hybrid_powertrain:fuel_cell:design_power", val=np.nan, units='W')
+        self.add_input("data:mission:sizing:endurance", val=np.nan, units='min')
         self.add_input("data:propulsion:hybrid_powertrain:h2_storage:pressure", val=np.nan, units='Pa')
-        self.add_input("data:propulsion:hybrid_powertrain:h2_storage:temperature", val=np.nan, units='K')
+        # self.add_input("data:propulsion:hybrid_powertrain:h2_storage:temperature", val=np.nan, units='K')
         self.add_input("data:geometry:hybrid_powertrain:h2_storage:nb_tanks", val=np.nan, units='K')
         self.add_input("data:geometry:hybrid_powertrain:h2_storage:length_radius_ratio", val=np.nan, units=None)
-        self.add_input("data:geometry:hybrid_powertrain:h2_storage:fos", val=np.nan, units=None, desc='Factor of safety')
+        self.add_input("data:geometry:hybrid_powertrain:h2_storage:fos", val=2.25, units=None,
+                       desc='Factor of safety defined by industry standard specifications')
         self.add_input("data:geometry:hybrid_powertrain:h2_storage:maximum_stress", val=np.nan, units='Pa')
         self.add_input("data:geometry:hybrid_powertrain:h2_storage:mass_fitting_factor", val=1, units=None,
                        desc='Parameter to adjust the mass of the fuel tanks arguably too high')
@@ -43,7 +46,7 @@ class ComputeH2Storage(om.ExplicitComponent):
                         desc='Total volume of the tank(s)')
         self.add_output("data:geometry:hybrid_powertrain:h2_storage:single_tank_volume", units='m**3')
         self.add_output("data:geometry:hybrid_powertrain:h2_storage:tank_internal_radius", units='m')
-        self.add_output("data:geometry:hybrid_powertrain:h2_storage:tank_internal_height", units='m')
+        self.add_output("data:geometry:hybrid_powertrain:h2_storage:tank_internal_length", units='m')
         self.add_output("data:geometry:hybrid_powertrain:h2_storage:wall_thickness", units='m')
         self.add_output("data:weight:hybrid_powertrain:h2_storage:single_tank_mass", units='kg')
         self.add_output("data:weight:hybrid_powertrain:h2_storage:total_tanks_mass", units='kg')
@@ -51,18 +54,19 @@ class ComputeH2Storage(om.ExplicitComponent):
         self.declare_partials('*', '*', method="fd")
 
     def compute(self, inputs, outputs, discrete_inputs=None, discrete_outputs=None):
-
         V_cell = inputs['data:propulsion:hybrid_powertrain:fuel_cell:cell_voltage']
         required_power = inputs['data:propulsion:hybrid_powertrain:fuel_cell:design_power']
-        op_time = inputs['data:performances:he_mission:operation_time']
+        op_time = inputs['data:mission:sizing:endurance'] * 60  # [s]
         P_H = inputs['data:propulsion:hybrid_powertrain:h2_storage:pressure']
-        T_H = inputs['data:propulsion:hybrid_powertrain:h2_storage:temperature']
+        # T_H = inputs['data:propulsion:hybrid_powertrain:h2_storage:temperature']
         nb_tanks = inputs['data:geometry:hybrid_powertrain:h2_storage:nb_tanks']
         tank_lr_ratio = inputs['data:geometry:hybrid_powertrain:h2_storage:length_radius_ratio']  # length to radius
         FoS = inputs['data:geometry:hybrid_powertrain:h2_storage:fos']  # Factor of safety
         max_stress = inputs['data:geometry:hybrid_powertrain:h2_storage:maximum_stress']
         density = inputs['data:geometry:hybrid_powertrain:h2_storage:tank_density']
-        mass_fit = inputs['data:weight:hybrid_powertrain:h2_storage:mass_fitting_factor']
+        mass_fit = inputs['data:geometry:hybrid_powertrain:h2_storage:mass_fitting_factor']
+
+        T_H = Atmosphere(altitude=0).temperature  # [K]
 
         """ Determining total mass of hydrogen needed """
         F_H = required_power / (V_cell * 2 * 96500 * 500)  # [kg/s] - Flow rate of hydrogen
@@ -94,5 +98,5 @@ class ComputeH2Storage(om.ExplicitComponent):
         outputs['data:geometry:hybrid_powertrain:h2_storage:tank_internal_radius'] = tank_radius
         outputs['data:geometry:hybrid_powertrain:h2_storage:tank_internal_length'] = tank_length
         outputs['data:geometry:hybrid_powertrain:h2_storage:wall_thickness'] = thickness
-        outputs['data:geometry:hybrid_powertrain:h2_storage:single_tank_mass'] = tank_mass
-        outputs['data:geometry:hybrid_powertrain:h2_storage:total_tanks_mass'] = tot_tank_mass
+        outputs['data:weight:hybrid_powertrain:h2_storage:single_tank_mass'] = tank_mass
+        outputs['data:weight:hybrid_powertrain:h2_storage:total_tanks_mass'] = tot_tank_mass

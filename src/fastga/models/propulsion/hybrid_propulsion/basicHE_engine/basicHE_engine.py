@@ -55,60 +55,51 @@ NACELLE_LABELS = {
 
 class BasicHEEngine(AbstractHybridPropulsion):
     def __init__(
-        self,
-        max_power: float,
-        cruise_altitude: float,
-        cruise_speed: float,
-        fuel_type: float,
-        strokes_nb: float,
-        prop_layout: float,
-        speed_SL,
-        thrust_SL,
-        thrust_limit_SL,
-        efficiency_SL,
-        speed_CL,
-        thrust_CL,
-        thrust_limit_CL,
-        efficiency_CL,
+            self,
+            max_power: float,
+            cruise_altitude: float,
+            cruise_speed: float,
+            prop_layout: float,
+            speed_SL,
+            thrust_SL,
+            thrust_limit_SL,
+            efficiency_SL,
+            speed_CL,
+            thrust_CL,
+            thrust_limit_CL,
+            efficiency_CL,
+            motor_speed,
+            nominal_torque,
+            max_torque,
+            eta_pe,
+            fc_des_power,
+            H2_mass_flow
     ):
         """
-        Parametric Hybrid Electric propulsion engine.
+        Parametric hydrogen-powered Hybrid Electric propulsion engine.
 
-        It computes engine characteristics using fuel type, motor architecture
+        It computes engine characteristics using fuel cell design power, motor architecture
         and constant propeller efficiency using analytical model from following sources:
 
         :param max_power: maximum delivered mechanical power of engine (units=W)
         :param cruise_altitude: design altitude for cruise (units=m)
         :param cruise_speed: design altitude for cruise (units=m/s)
-        :param fuel_type: 1.0 for gasoline and 2.0 for diesel engine and 3.0 for Jet Fuel
-        :param strokes_nb: can be either 2-strokes (=2.0) or 4-strokes (=4.0)
         :param prop_layout: propulsion position in nose (=3.0) or wing (=1.0)
         """
-        if fuel_type == 1.0:
-            self.ref = {
-                "max_power": 132480,
-                "length": 0.83,
-                "height": 0.57,
-                "width": 0.85,
-                "mass": 136,
-            }  # Lycoming IO-360-B1A
-            self.map_file_path = pth.join(resources.__path__[0], "FourCylindersAtmospheric.csv")
-        else:
-            self.ref = {
-                "max_power": 160000,
-                "length": 0.859,
-                "height": 0.659,
-                "width": 0.650,
-                "mass": 205,
-            }  # TDA CR 1.9 16V
-            # FIXME: change the map file for those engines
-            self.map_file_path = pth.join(resources.__path__[0], "FourCylindersAtmospheric.csv")
+
+        self.ref = {  # PIPISTREL E-811-268MVLC
+            # https://www.pipistrel-aircraft.com/aircraft/electric-flight/e-811/#tab-id-2
+            "max_power": 57600,
+            "length": 0.206,
+            "height": 0.274,
+            "width": 0.091,
+            "mass": 22.7,
+        }
+        self.map_file_path = pth.join(resources.__path__[0], "FourCylindersAtmospheric.csv")
         self.prop_layout = prop_layout
         self.max_power = max_power
         self.cruise_altitude = cruise_altitude
         self.cruise_speed = cruise_speed
-        self.fuel_type = fuel_type
-        self.strokes_nb = strokes_nb
         self.idle_thrust_rate = 0.01
         self.speed_SL = speed_SL
         self.thrust_SL = thrust_SL
@@ -119,6 +110,12 @@ class BasicHEEngine(AbstractHybridPropulsion):
         self.thrust_limit_CL = thrust_limit_CL
         self.efficiency_CL = efficiency_CL
         self.specific_shape = None
+        self.motor_speed = motor_speed
+        self.nominal_torque = nominal_torque
+        self.max_torque = max_torque
+        self.eta_pe = eta_pe  # Efficiency of power electronics
+        self.fc_des_power = fc_des_power
+        self.H2_mass_flow = H2_mass_flow
 
         # Evaluate engine volume based on max power @ 0.0m
         rpm_vect, _, pme_limit_vect, _ = self.read_map(self.map_file_path)
@@ -184,7 +181,7 @@ class BasicHEEngine(AbstractHybridPropulsion):
         # pylint: disable=too-many-arguments  # they define the trajectory
         self.specific_shape = np.shape(flight_points.mach)
         if isinstance(flight_points.mach, float):
-            sfc, thrust_rate, thrust = self._compute_flight_points(
+            battery_power, sfc, thrust_rate, thrust = self._compute_flight_points(
                 flight_points.mach,
                 flight_points.altitude,
                 flight_points.engine_setting,
@@ -192,6 +189,7 @@ class BasicHEEngine(AbstractHybridPropulsion):
                 flight_points.thrust_rate,
                 flight_points.thrust,
             )
+            flight_points.battery_power = battery_power
             flight_points.sfc = sfc
             flight_points.thrust_rate = thrust_rate
             flight_points.thrust = thrust
@@ -212,10 +210,12 @@ class BasicHEEngine(AbstractHybridPropulsion):
             else:
                 thrust = np.asarray(flight_points.thrust).flatten()
             self.specific_shape = np.shape(mach)
-            sfc, thrust_rate, thrust = self._compute_flight_points(
+            battery_power, sfc, thrust_rate, thrust = self._compute_flight_points(
                 mach.flatten(), altitude, engine_setting, thrust_is_regulated, thrust_rate, thrust,
             )
             if len(self.specific_shape) != 1:  # reshape data that is not array form
+                # noinspection PyUnresolvedReferences
+                flight_points.battery_power = battery_power.reshape(self.specific_shape)
                 # noinspection PyUnresolvedReferences
                 flight_points.sfc = sfc.reshape(self.specific_shape)
                 # noinspection PyUnresolvedReferences
@@ -223,32 +223,24 @@ class BasicHEEngine(AbstractHybridPropulsion):
                 # noinspection PyUnresolvedReferences
                 flight_points.thrust = thrust.reshape(self.specific_shape)
             else:
+                flight_points.battery_power = battery_power
                 flight_points.sfc = sfc
                 flight_points.thrust_rate = thrust_rate
                 flight_points.thrust = thrust
 
     def _compute_flight_points(
-        self,
-        mach: Union[float, Sequence],
-        altitude: Union[float, Sequence],
-        engine_setting: Union[EngineSetting, Sequence],
-        thrust_is_regulated: Optional[Union[bool, Sequence]] = None,
-        thrust_rate: Optional[Union[float, Sequence]] = None,
-        thrust: Optional[Union[float, Sequence]] = None,
-    ) -> Tuple[Union[float, Sequence], Union[float, Sequence], Union[float, Sequence]]:
-        """
-        Same as :meth:`compute_flight_points`.
+            self,
+            mach: Union[float, Sequence],
+            altitude: Union[float, Sequence],
+            engine_setting: Union[EngineSetting, Sequence],
+            thrust_is_regulated: Optional[Union[bool, Sequence]] = None,
+            thrust_rate: Optional[Union[float, Sequence]] = None,
+            thrust: Optional[Union[float, Sequence]] = None,
+    ) -> Tuple[Union[float, Sequence], Union[float, Sequence], Union[float, Sequence], Union[float, Sequence]]:
 
-        :param mach: Mach number
-        :param altitude: (unit=m) altitude w.r.t. to sea level
-        :param engine_setting: define engine settings
-        :param thrust_is_regulated: tells if thrust_rate or thrust should be used (works element-wise)
-        :param thrust_rate: thrust rate (unit=none)
-        :param thrust: required thrust (unit=N)
-        :return: SFC (in kg/s/N), thrust rate, thrust (in N)
         """
-        """
-        Computes the Specific Fuel Consumption based on aircraft trajectory conditions.
+        Same as method 'compute_flight_points' .
+        Computes battery power and Specific Fuel Consumption based on aircraft trajectory conditions.
         
         :param flight_points.mach: Mach number
         :param flight_points.altitude: (unit=m) altitude w.r.t. to sea level
@@ -256,7 +248,7 @@ class BasicHEEngine(AbstractHybridPropulsion):
         :param flight_points.thrust_is_regulated: tells if thrust_rate or thrust should be used (works element-wise)
         :param flight_points.thrust_rate: thrust rate (unit=none)
         :param flight_points.thrust: required thrust (unit=N)
-        :return: SFC (in kg/s/N), thrust rate, thrust (in N)
+        :return: battery power (in W), SFC (in kg/s/N), thrust rate, thrust (in N)
         """
 
         # Treat inputs (with check on thrust rate <=1.0)
@@ -273,7 +265,7 @@ class BasicHEEngine(AbstractHybridPropulsion):
         atmosphere = Atmosphere(np.asarray(altitude), altitude_in_feet=False)
         mach = np.asarray(mach) + (np.asarray(mach) == 0) * 1e-12
         atmosphere.mach = mach
-        max_thrust = self.max_thrust(np.asarray(engine_setting), atmosphere)
+        max_thrust = self.max_thrust(atmosphere)
 
         # We compute thrust values from thrust rates when needed
         idx = np.logical_not(thrust_is_regulated)
@@ -302,18 +294,34 @@ class BasicHEEngine(AbstractHybridPropulsion):
         # as some thrust rates that are computed may have been provided as input)
         out_thrust_rate = out_thrust / max_thrust
 
-        # Now SFC (g/kwh) can be computed and converted to sfc_thrust (kg/N) to match computation from turboshaft
+        # Now SFC [kg/Ws] can be computed and converted to sfc_thrust [kg/N] to match computation from turboshaft
         sfc, mech_power = self.sfc(out_thrust, engine_setting, atmosphere)
-        sfc_time = (mech_power * 1e-3) * sfc / 3.6e6  # sfc in kg/s
-        sfc_thrust = sfc_time / np.maximum(out_thrust, 1e-6)  # avoid 0 division
+        sfc_time = mech_power * sfc  # SFC in [kg/s]
+        sfc_thrust = sfc_time / np.maximum(out_thrust, 1e-6)  # Avoid 0 divisionn - [kg/N]
 
-        return sfc_thrust, out_thrust_rate, out_thrust
+        # Now battery required power [W] can be computed taking into account the power delivered by the fuel cells :
+        # Compute motor power losses
+        alpha, beta = self.compute_elec_motor(self.nominal_torque)
+        torque = 9.554140127 * mech_power / self.motor_speed  # Torque in [N*m]
+
+        # Check torque is within limits
+        if torque > self.max_torque:
+            raise Exception("Maximum motor torque value [{}Nm] exceeded!".format(
+                self.max_torque))
+
+        power_losses = (alpha * torque ** 2) + (beta * self.motor_speed ** 1.5)
+
+        pe_power = mech_power + power_losses  # Power received by power electronics
+
+        battery_power = pe_power / self.eta_pe - self.fc_des_power  # Power to be supplied by the battery
+
+        return battery_power, sfc_thrust, out_thrust_rate, out_thrust
 
     @staticmethod
     def _check_thrust_inputs(
-        thrust_is_regulated: Optional[Union[float, Sequence]],
-        thrust_rate: Optional[Union[float, Sequence]],
-        thrust: Optional[Union[float, Sequence]],
+            thrust_is_regulated: Optional[Union[float, Sequence]],
+            thrust_rate: Optional[Union[float, Sequence]],
+            thrust: Optional[Union[float, Sequence]],
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Checks that inputs are consistent and return them in proper shape.
@@ -373,7 +381,7 @@ class BasicHEEngine(AbstractHybridPropulsion):
                     "provided."
                 )
             if np.shape(thrust_rate) != np.shape(thrust_is_regulated) or np.shape(
-                thrust
+                    thrust
             ) != np.shape(thrust_is_regulated):
                 raise FastBasicHEEngineInconsistentInputParametersError(
                     "When use_thrust_rate is a sequence, both thrust_rate and thrust should have "
@@ -383,7 +391,7 @@ class BasicHEEngine(AbstractHybridPropulsion):
         return thrust_is_regulated, thrust_rate, thrust
 
     def propeller_efficiency(
-        self, thrust: Union[float, Sequence[float]], atmosphere: Atmosphere
+            self, thrust: Union[float, Sequence[float]], atmosphere: Atmosphere
     ) -> Union[float, Sequence]:
         """
         Compute the propeller efficiency.
@@ -435,10 +443,10 @@ class BasicHEEngine(AbstractHybridPropulsion):
                 )
                 altitude = atmosphere.get_altitude(altitude_in_feet=False)[idx]
                 propeller_efficiency[idx] = (
-                    lower_bound
-                    + (upper_bound - lower_bound)
-                    * np.minimum(altitude, self.cruise_altitude)
-                    / self.cruise_altitude
+                        lower_bound
+                        + (upper_bound - lower_bound)
+                        * np.minimum(altitude, self.cruise_altitude)
+                        / self.cruise_altitude
                 )
 
         return propeller_efficiency
@@ -458,47 +466,28 @@ class BasicHEEngine(AbstractHybridPropulsion):
         return max_power
 
     def sfc(
-        self,
-        thrust: Union[float, Sequence[float]],
-        engine_setting: Union[float, Sequence[float]],
-        atmosphere: Atmosphere,
+            self,
+            thrust: Union[float, Sequence[float]],
+            engine_setting: Union[float, Sequence[float]],
+            atmosphere: Atmosphere,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Computation of the SFC.
+        Computation of the SFC for hydrogen fuel cells considering total propulsive power (meaning battery power is also
+        taken into account for calculations).
+        Assuming constant delivered power for the FC system ie constant hydrogen mass flow.
 
         :param thrust: Thrust (in N)
         :param engine_setting: Engine settings (climb, cruise,... )
         :param atmosphere: Atmosphere instance at intended altitude
-        :return: SFC (in g/kw) and Power (in W)
+        :return: SFC (in kg/Ws) and Power (in W)
         """
-
-        # Load engine map and save interpolation formula
-        rpm_vect, pme_vect, _, sfc_matrix = self.read_map(self.map_file_path)
-        torque_vect = pme_vect * 1e5 * self.volume / (8.0 * np.pi)
-        ICE_sfc = interp2d(torque_vect, rpm_vect, sfc_matrix, kind="cubic")
-
-        # Define RPM & mixture using engine settings
-        if np.size(engine_setting) == 1:
-            rpm_values = self.rpm_values[int(engine_setting)]
-            mixture_values = self.mixture_values[int(engine_setting)]
-        else:
-            rpm_values = np.array(
-                [self.rpm_values[engine_setting[idx]] for idx in range(np.size(engine_setting))]
-            )
-            mixture_values = np.array(
-                [self.mixture_values[engine_setting[idx]] for idx in range(np.size(engine_setting))]
-            )
-
-        # Compute sfc @ 2500RPM
         real_power = np.zeros(np.size(thrust))
-        torque = np.zeros(np.size(thrust))
         sfc = np.zeros(np.size(thrust))
         if np.size(thrust) == 1:
             real_power = (
-                thrust * atmosphere.true_airspeed / self.propeller_efficiency(thrust, atmosphere)
+                    thrust * atmosphere.true_airspeed / self.propeller_efficiency(thrust, atmosphere)
             )
-            torque = real_power / (rpm_values * np.pi / 30.0)
-            sfc = ICE_sfc(torque, rpm_values) * mixture_values
+            sfc = self.H2_mass_flow / real_power  # [kg/s/W]
         else:
             for idx in range(np.size(thrust)):
                 local_atmosphere = Atmosphere(
@@ -506,72 +495,39 @@ class BasicHEEngine(AbstractHybridPropulsion):
                 )
                 local_atmosphere.mach = atmosphere.mach[idx]
                 real_power[idx] = (
-                    thrust[idx]
-                    * atmosphere.true_airspeed[idx]
-                    / self.propeller_efficiency(thrust[idx], local_atmosphere)
+                        thrust[idx]
+                        * atmosphere.true_airspeed[idx]
+                        / self.propeller_efficiency(thrust[idx], local_atmosphere)
                 )
-                torque[idx] = real_power[idx] / (rpm_values[idx] * np.pi / 30.0)
-                sfc[idx] = ICE_sfc(torque[idx], rpm_values[idx]) * mixture_values[idx]
-        return sfc, real_power
+                sfc[idx] = self.H2_mass_flow / real_power[idx]  # [kg/s/W]
+        return sfc, real_power  # [kg/Ws], [W]
 
     def max_thrust(
-        self, engine_setting: Union[float, Sequence[float]], atmosphere: Atmosphere,
+            self,
+            atmosphere: Atmosphere,
     ) -> np.ndarray:
         """
-        Computation of maximum thrust either due to propeller thrust limit or ICE max power.
-
-        :param engine_setting: Engine settings (climb, cruise,... )
+        Computation of maximum thrust either due to propeller thrust limit or electric engine max power.
+        Based on the work done in FAST-GA-ELEC.
         :param atmosphere: Atmosphere instance at intended altitude (should be <=20km)
         :return: maximum thrust (in N)
         """
-
         # Calculate maximum propeller thrust @ given altitude and speed
-        if isinstance(atmosphere.true_airspeed, float):
-            lower_bound = np.interp(atmosphere.true_airspeed, self.speed_SL, self.thrust_limit_SL)
-            upper_bound = np.interp(atmosphere.true_airspeed, self.speed_CL, self.thrust_limit_CL)
-        else:
-            lower_bound = np.interp(
-                list(atmosphere.true_airspeed), self.speed_SL, self.thrust_limit_SL
-            )
-            upper_bound = np.interp(
-                list(atmosphere.true_airspeed), self.speed_CL, self.thrust_limit_CL
-            )
+        lower_bound = np.interp(atmosphere.true_airspeed, self.speed_SL, self.thrust_limit_SL)
+        upper_bound = np.interp(atmosphere.true_airspeed, self.speed_CL, self.thrust_limit_CL)
         altitude = atmosphere.get_altitude(altitude_in_feet=False)
-        thrust_max_propeller = (
-            lower_bound
-            + (upper_bound - lower_bound)
-            * np.minimum(altitude, self.cruise_altitude)
+        thrust_max_propeller = lower_bound + (upper_bound - lower_bound) * np.minimum(altitude, self.cruise_altitude) \
             / self.cruise_altitude
-        )
 
-        # Calculate engine max power @ given RPM & altitude
-        rpm_vect, _, pme_limit_vect, _ = self.read_map(self.map_file_path)
-        torque_vect = pme_limit_vect * 1e5 * self.volume / (8.0 * np.pi)
-        power_max_vect = torque_vect * rpm_vect * (np.pi / 30.0)
-        if np.size(engine_setting) == 1:
-            rpm_values = np.array(self.rpm_values[int(engine_setting)])
-            max_power_SL = np.interp(rpm_values, rpm_vect, power_max_vect)
-        else:
-            rpm_values = np.array(
-                [self.rpm_values[engine_setting[idx]] for idx in range(np.size(engine_setting))]
-            )
-            max_power_SL = np.interp(list(rpm_values), rpm_vect, power_max_vect)
-        sigma = atmosphere.density / Atmosphere(0.0).density
-        max_power = max_power_SL * (sigma - (1 - sigma) / 7.55)
-
-        # Found thrust relative to ICE maximum power @ given altitude and speed:
+        # Found thrust relative to electric engine maximum power @ given altitude and speed:
         # calculates first thrust interpolation vector (between min and max of propeller table) and associated
         # efficiency, then calculates power and found thrust (interpolation limits to max propeller thrust)
-        thrust_interp = np.linspace(
-            np.min(self.thrust_SL) * np.ones(np.size(thrust_max_propeller)),
-            thrust_max_propeller,
-            10,
-        ).transpose()
+        sigma = atmosphere.density / Atmosphere(0.0).density
+        max_power = self.max_power * (sigma - (1 - sigma) / 7.55)
+        thrust_interp = np.linspace(np.min(self.thrust_SL) * np.ones(np.size(thrust_max_propeller)),
+                                    thrust_max_propeller, 10).transpose()
         if np.size(altitude) == 1:  # Calculate for float
-            thrust_max_global = 0.0
-            local_atmosphere = Atmosphere(
-                altitude * np.ones(np.size(thrust_interp)), altitude_in_feet=False
-            )
+            local_atmosphere = Atmosphere(altitude * np.ones(np.size(thrust_interp)), altitude_in_feet=False)
             local_atmosphere.mach = atmosphere.mach * np.ones(np.size(thrust_interp))
             propeller_efficiency = self.propeller_efficiency(thrust_interp[0], local_atmosphere)
             mechanical_power = thrust_interp[0] * atmosphere.true_airspeed / propeller_efficiency
@@ -579,55 +535,36 @@ class BasicHEEngine(AbstractHybridPropulsion):
                 efficiency_relative_error = 1
                 propeller_efficiency = propeller_efficiency[0]
                 while efficiency_relative_error > 1e-2:
-                    thrust_max_global = max_power * propeller_efficiency / atmosphere.true_airspeed
-                    propeller_efficiency_new = self.propeller_efficiency(
-                        thrust_max_global, atmosphere
-                    )
-                    efficiency_relative_error = np.abs(
-                        (propeller_efficiency_new - propeller_efficiency)
-                        / efficiency_relative_error
-                    )
+                    max_thrust = max_power * propeller_efficiency / atmosphere.true_airspeed
+                    propeller_efficiency_new = self.propeller_efficiency(max_thrust, atmosphere)
+                    efficiency_relative_error = np.abs((propeller_efficiency_new - propeller_efficiency)
+                                                       / efficiency_relative_error)
                     propeller_efficiency = propeller_efficiency_new
             else:
-                thrust_max_global = np.interp(max_power, mechanical_power, thrust_interp[0])
+                max_thrust = np.interp(max_power, mechanical_power, thrust_interp[0])
         else:  # Calculate for array
-            thrust_max_global = np.zeros(np.size(altitude))
+            max_thrust = np.zeros(np.size(altitude))
             for idx in range(np.size(altitude)):
-                local_atmosphere = Atmosphere(
-                    altitude[idx] * np.ones(np.size(thrust_interp[idx])), altitude_in_feet=False
-                )
+                local_atmosphere = Atmosphere(altitude[idx] * np.ones(np.size(thrust_interp[idx])),
+                                              altitude_in_feet=False)
                 local_atmosphere.mach = atmosphere.mach[idx] * np.ones(np.size(thrust_interp[idx]))
-                propeller_efficiency = self.propeller_efficiency(
-                    thrust_interp[idx], local_atmosphere
-                )
-                mechanical_power = (
-                    thrust_interp[idx] * atmosphere.true_airspeed[idx] / propeller_efficiency
-                )
-                if (
-                    np.min(mechanical_power) > max_power[idx]
-                ):  # take the lower bound efficiency for calculation
+                propeller_efficiency = self.propeller_efficiency(thrust_interp[idx], local_atmosphere)
+                mechanical_power = thrust_interp[idx] * atmosphere.true_airspeed[idx] / propeller_efficiency
+                if np.min(mechanical_power) > max_power:  # take the lower bound efficiency for calculation
                     efficiency_relative_error = 1
                     local_atmosphere = Atmosphere(altitude[idx], altitude_in_feet=False)
                     local_atmosphere.mach = atmosphere.mach[idx]
                     propeller_efficiency = propeller_efficiency[0]
                     while efficiency_relative_error > 1e-2:
-                        thrust_max_global[idx] = (
-                            max_power[idx] * propeller_efficiency / atmosphere.true_airspeed[idx]
-                        )
-                        propeller_efficiency_new = self.propeller_efficiency(
-                            thrust_max_global[idx], local_atmosphere
-                        )
-                        efficiency_relative_error = np.abs(
-                            (propeller_efficiency_new - propeller_efficiency)
-                            / efficiency_relative_error
-                        )
+                        max_thrust[idx] = max_power * propeller_efficiency / atmosphere.true_airspeed[idx]
+                        propeller_efficiency_new = self.propeller_efficiency(max_thrust[idx], local_atmosphere)
+                        efficiency_relative_error = np.abs((propeller_efficiency_new - propeller_efficiency)
+                                                           / efficiency_relative_error)
                         propeller_efficiency = propeller_efficiency_new
                 else:
-                    thrust_max_global[idx] = np.interp(
-                        max_power[idx], mechanical_power, thrust_interp[idx]
-                    )
+                    max_thrust[idx] = np.interp(max_power, mechanical_power, thrust_interp[idx])
 
-        return thrust_max_global
+        return max_thrust
 
     def compute_weight(self) -> float:
         """
@@ -651,12 +588,8 @@ class BasicHEEngine(AbstractHybridPropulsion):
         """
 
         # Compute engine dimensions
-        self.engine.length = self.ref["length"] * (self.max_power / self.ref["max_power"]) ** (
-            1 / 3
-        )
-        self.engine.height = self.ref["height"] * (self.max_power / self.ref["max_power"]) ** (
-            1 / 3
-        )
+        self.engine.length = self.ref["length"] * (self.max_power / self.ref["max_power"]) ** (1 / 3)
+        self.engine.height = self.ref["height"] * (self.max_power / self.ref["max_power"]) ** (1 / 3)
         self.engine.width = self.ref["width"] * (self.max_power / self.ref["max_power"]) ** (1 / 3)
 
         if self.prop_layout == 3.0:
@@ -667,7 +600,9 @@ class BasicHEEngine(AbstractHybridPropulsion):
 
         # Compute nacelle dimensions
         self.nacelle = Nacelle(
-            height=self.engine.height * 1.1, width=self.engine.width * 1.1, length=nacelle_length,
+            height=self.engine.height * 1.1,
+            width=self.engine.width * 1.1,
+            length=nacelle_length,
         )
         self.nacelle.wet_area = 2 * (self.nacelle.height + self.nacelle.width) * self.nacelle.length
 
@@ -690,7 +625,7 @@ class BasicHEEngine(AbstractHybridPropulsion):
         reynolds = unit_reynolds * self.nacelle.length
         # Roskam method for wing-nacelle interaction factor (vol 6 page 3.62)
         cf_nac = 0.455 / (
-            (1 + 0.144 * mach ** 2) ** 0.65 * (math.log10(reynolds)) ** 2.58
+                (1 + 0.144 * mach ** 2) ** 0.65 * (math.log10(reynolds)) ** 2.58
         )  # 100% turbulent
         f = self.nacelle.length / math.sqrt(4 * self.nacelle.height * self.nacelle.width / math.pi)
         ff_nac = 1 + 0.35 / f  # Raymer (seen in Gudmunsson)
@@ -698,6 +633,48 @@ class BasicHEEngine(AbstractHybridPropulsion):
         drag_force = cf_nac * ff_nac * self.nacelle.wet_area * if_nac
 
         return drag_force
+
+    def compute_elec_motor(self, T_nom):
+        """
+        Computes power loss parameters of the motor (alpha and beta) using which the motor power losses are computed.
+        This function is a duplicate of the function compute_elec_motor in the geometry to be able to compute the
+        power loss coefficients inside the propulsion module.
+        """
+        diam_ref = 0.268  # [m]
+        length_ref = 0.091  # [m]
+        nom_torque_ref = 200  # [Nm]
+        convec_coeff_ref = 14  # [W/m2/K]
+        nom_rot_speed_ref = 2500  # [rpm]
+        mass_ref = 22.7  # [kg]
+
+        # Compute power losses for the reference motor
+        T_winding = 110  # [degC]
+        T_atm = 25  # [degC]
+        delta_T = T_winding - T_atm
+        Rth = 1 / (convec_coeff_ref * np.pi * diam_ref ** 2 / 4)
+        p_loss = delta_T / Rth
+
+        W_nom_ref = nom_rot_speed_ref  # Speed
+        T_nom_ref = nom_torque_ref  # Torque
+
+        # Compute alpha based on power loss at point A
+
+        T_stall_ref = T_nom_ref / 0.25
+
+        alpha_ref = p_loss / (T_stall_ref ** 2)  # (W/(Nm)^2)
+
+        # Compute beta based on power loss at point B
+
+        beta_ref = (p_loss - (alpha_ref * T_nom_ref ** 2)) / (W_nom_ref ** 1.5)
+
+        # Compute diameter for the required motor with respect to the reference motor using scaling laws
+
+        T_scale_ratio = T_nom / T_nom_ref
+
+        mot_alpha = alpha_ref * (T_scale_ratio ** (-5 / 3.5))
+        mot_beta = beta_ref * (T_scale_ratio ** (3 / 3.5))
+
+        return mot_alpha, mot_beta
 
 
 @AddKeyAttributes(ENGINE_LABELS)

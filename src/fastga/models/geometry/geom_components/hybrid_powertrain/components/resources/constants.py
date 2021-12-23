@@ -42,3 +42,14 @@ Balance of Plant of the FC system
 Based on : https://repository.tudelft.nl/islandora/object/uuid%3A6e274095-9920-4d20-9e11-d5b76363e709
 """
 FC_OVERHEAD = 0.30
+
+"""
+Intakes for the sized Heat Exchanger : parameters of the reference NACA intake
+Based on : https://www.researchgate.net/publication/303312026_Numerical_Study_of_the_Performance_Improvement_of_Submerged_Air_Intakes_Using_Vortex_Generators
+"""
+NACA_INTAKE = {
+    'WIDTH': 120,  # [mm]
+    'LENGTH': 229.33,  # [mm]
+    'DEPTH': 30,  # [mm]
+    'MASS_FLOW': 0.260  # [kg/s]
+    }

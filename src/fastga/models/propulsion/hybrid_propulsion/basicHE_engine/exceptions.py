@@ -1,4 +1,4 @@
-"""Exceptions for basicIC_engine package."""
+"""Exceptions for basicHE_engine package."""
 
 
 #  This file is part of FAST : A framework for rapid Overall Aircraft Design

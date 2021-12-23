@@ -14,7 +14,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import openmdao.api as om
-from fastoad.model_base import atmosphere
+from stdatm.atmosphere import Atmosphere
 import numpy as np
 
 
@@ -28,7 +28,7 @@ class ComputeCompressor(om.ExplicitComponent):
     """
 
     def setup(self):
-        self.add_input("data:propulsion:hybrid_powertrain:fuel_cell:design_power", val=np.nan, units='kW')
+        self.add_input("data:propulsion:hybrid_powertrain:fuel_cell:design_power", val=np.nan, units='W')
         self.add_input("data:propulsion:hybrid_powertrain:fuel_cell:stack_pressure", val=np.nan, units='Pa')
         self.add_input("data:propulsion:hybrid_powertrain:fuel_cell:cell_voltage", val=np.nan, units='V')
         self.add_input("data:mission:sizing:main_route:cruise:altitude", val=np.nan, units='m')
@@ -38,9 +38,9 @@ class ComputeCompressor(om.ExplicitComponent):
         self.add_input("data:propulsion:hybrid_powertrain:compressor:ref_mass", val=np.nan, units="kg")
         self.add_input("data:propulsion:hybrid_powertrain:compressor:ref_radius", val=np.nan, units="m")
 
-        self.add_output("data:propulsion:hybrid_powertrain:compressor:power", units='kJ')
-        self.add_output("data:propulsion:hybrid_powertrain:compressor:radius", units="m")
-        self.add_output("data:propulsion:hybrid_powertrain:compressor:mass", units="kg")
+        self.add_output("data:propulsion:hybrid_powertrain:compressor:power", units='W')
+        self.add_output("data:geometry:hybrid_powertrain:compressor:radius", units="m")
+        self.add_output("data:weight:hybrid_powertrain:compressor:mass", units="kg")
 
         self.declare_partials('*', '*', method="fd")
 
@@ -48,9 +48,9 @@ class ComputeCompressor(om.ExplicitComponent):
         fc_design_power = inputs['data:propulsion:hybrid_powertrain:fuel_cell:design_power']
         fc_cell_v = inputs['data:propulsion:hybrid_powertrain:fuel_cell:stack_pressure']
         fc_stack_pressure = inputs['data:propulsion:hybrid_powertrain:fuel_cell:cell_voltage']
-        air_temp = atmosphere(altitude=inputs['data:mission:sizing:main_route:cruise:altitude']).temperature  # [K]
-        air_pressure = atmosphere(altitude=inputs['data:mission:sizing:main_route:cruise:altitude']).pressure  # [Pa]
-        air_density = atmosphere(altitude=inputs['data:mission:sizing:main_route:cruise:altitude']).density  # [kg/m**3]
+        air_temp = Atmosphere(altitude=inputs['data:mission:sizing:main_route:cruise:altitude']).temperature  # [K]
+        air_pressure = Atmosphere(altitude=inputs['data:mission:sizing:main_route:cruise:altitude']).pressure  # [Pa]
+        air_density = Atmosphere(altitude=inputs['data:mission:sizing:main_route:cruise:altitude']).density  # [kg/m**3]
         motor_eff = inputs['data:propulsion:hybrid_powertrain:compressor:motor_efficiency']
         delta = inputs["data:propulsion:hybrid_powertrain:compressor:delta"]
         W = inputs["data:propulsion:hybrid_powertrain:compressor:specific_work"]
@@ -62,7 +62,7 @@ class ComputeCompressor(om.ExplicitComponent):
         stoich_ratio = 2  # Common oxygen stoichiometric ratio for the FC
         F = 96.485  # [C/mol] - Faraday Constant
 
-        ox_flow = M_O2 * fc_design_power * stoich_ratio / (4 * fc_cell_v * F) / 1000  # [kg/s]
+        ox_flow = M_O2 / 1000 * fc_design_power * stoich_ratio / (4 * fc_cell_v * F) / 1000  # [kg/s]
         air_flow = ox_flow / 0.21  # [kg/s] - Assuming 21% of air is oxygen
 
         # Defining constants
@@ -73,7 +73,7 @@ class ComputeCompressor(om.ExplicitComponent):
         p_ratio = fc_stack_pressure / air_pressure
 
         # Determining compressor power
-        compressor_power = motor_eff * air_flow * cp * air_temp * (p_ratio ** ((gamma - 1) / gamma) - 1) / eta_c
+        compressor_power = motor_eff * air_flow * cp * air_temp * (p_ratio ** (((gamma - 1) / gamma) - 1)) / eta_c
 
         outputs['data:propulsion:hybrid_powertrain:compressor:power'] = compressor_power
 
@@ -85,5 +85,5 @@ class ComputeCompressor(om.ExplicitComponent):
         M = M_ref * (R / R_ref) ** 3
 
         outputs["data:geometry:hybrid_powertrain:compressor:radius"] = R
-        outputs["data:geometry:hybrid_powertrain:compressor:mass"] = M
+        outputs["data:weight:hybrid_powertrain:compressor:mass"] = M
 

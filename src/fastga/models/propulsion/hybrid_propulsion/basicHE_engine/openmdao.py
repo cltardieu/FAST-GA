@@ -28,7 +28,7 @@ from fastga.models.aerodynamics.components.compute_propeller_aero import THRUST_
 @RegisterPropulsion("fastga.wrapper.propulsion.basicHE_engine")
 class OMBasicHEEngineWrapper(IOMPropulsionWrapper):
     """
-    Wrapper class of for basic HE engine model.
+    Wrapper class for basic HE engine model.
     It is made to allow a direct call to :class:`~.basicHE_engine.BasicHEEngine` in an OpenMDAO
     component.
     Example of usage of this class::
@@ -62,9 +62,6 @@ class OMBasicHEEngineWrapper(IOMPropulsionWrapper):
 
     def setup(self, component: Component):
         component.add_input("data:propulsion:HE_engine:max_power", np.nan, units="W")
-        # component.add_input("data:propulsion:HE_engine:fuel_type", np.nan) check whether it matches the case of
-        # hydrogen fueled fuel cells (and below)
-        component.add_input("data:propulsion:HE_engine:strokes_nb", np.nan)
         component.add_input("data:TLAR:v_cruise", np.nan, units="m/s")
         component.add_input("data:mission:sizing:main_route:cruise:altitude", np.nan, units="m")
         component.add_input("data:geometry:propulsion:layout", np.nan)
@@ -106,6 +103,12 @@ class OMBasicHEEngineWrapper(IOMPropulsionWrapper):
             "data:aerodynamics:propeller:cruise_level:efficiency",
             np.full((SPEED_PTS_NB, THRUST_PTS_NB), np.nan),
         )
+        component.add_input("data:propulsion:hybrid_powertrain:motor:speed", np.nan, units="rpm")
+        component.add_input("data:propulsion:hybrid_powertrain:motor:nominal_torque", np.nan, units="N*m")
+        component.add_input("data:propulsion:hybrid_powertrain:motor:max_torque", np.nan, units="N*m")
+        component.add_input("data:propulsion:power_electronics:n_conv", np.nan)
+        component.add_input("data:propulsion:hybrid_powertrain:fuel_cell:design_power", np.nan, units='W')
+        component.add_input("data:propulsion:hybrid_powertrain:fuel_cell:hyd_mass_flow", np.nan, units='kg/s')
 
     @staticmethod
     def get_model(inputs) -> IPropulsion:
@@ -117,8 +120,6 @@ class OMBasicHEEngineWrapper(IOMPropulsionWrapper):
             "max_power": inputs["data:propulsion:HE_engine:max_power"],
             "cruise_altitude": inputs["data:mission:sizing:main_route:cruise:altitude"],
             "cruise_speed": inputs["data:TLAR:v_cruise"],
-            "fuel_type": inputs["data:propulsion:HE_engine:fuel_type"],
-            "strokes_nb": inputs["data:propulsion:HE_engine:strokes_nb"],
             "prop_layout": inputs["data:geometry:propulsion:layout"],
             "speed_SL": inputs["data:aerodynamics:propeller:sea_level:speed"],
             "thrust_SL": inputs["data:aerodynamics:propeller:sea_level:thrust"],
@@ -128,6 +129,12 @@ class OMBasicHEEngineWrapper(IOMPropulsionWrapper):
             "thrust_CL": inputs["data:aerodynamics:propeller:cruise_level:thrust"],
             "thrust_limit_CL": inputs["data:aerodynamics:propeller:cruise_level:thrust_limit"],
             "efficiency_CL": inputs["data:aerodynamics:propeller:cruise_level:efficiency"],
+            "motor_speed": inputs["data:propulsion:hybrid_powertrain:motor:speed"],
+            "nominal_torque": inputs["data:propulsion:hybrid_powertrain:motor:nominal_torque"],
+            "max_torque": inputs["data:propulsion:hybrid_powertrain:motor:max_torque"],
+            "eta_pe": inputs["data:propulsion:power_electronics:n_conv"],
+            "fc_des_power": inputs["data:propulsion:hybrid_powertrain:fuel_cell:design_power"],
+            "H2_mass_flow": inputs["data:propulsion:hybrid_powertrain:fuel_cell:hyd_mass_flow"]
         }
 
         return BasicHEEngine(**engine_params)
@@ -136,8 +143,6 @@ class OMBasicHEEngineWrapper(IOMPropulsionWrapper):
 @ValidityDomainChecker(
     {
         "data:propulsion:HE_engine:max_power": (50000, 250000),  # power range validity
-        "data:propulsion:HE_engine:fuel_type": [1.0, 2.0],  # fuel list
-        "data:propulsion:HE_engine:strokes_nb": [2.0, 4.0],  # architecture list
         "data:geometry:propulsion:layout": [1.0, 3.0],  # propulsion position (3.0=Nose, 1.0=Wing)
     }
 )

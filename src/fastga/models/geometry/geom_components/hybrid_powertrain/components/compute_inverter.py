@@ -18,7 +18,6 @@ import numpy as np
 from .resources.constants import AF
 
 
-
 class ComputeInverter(om.ExplicitComponent):
     """
     Sizing the inverter based on the method used here :
@@ -27,14 +26,14 @@ class ComputeInverter(om.ExplicitComponent):
     """
     def setup(self):
 
-        self.add_input("data:propulsion:hybrid_powertrain:fuel_cell:design_power", val=np.nan, units='kW')
-        self.add_input("data:propulsion:hybrid_powertrain:battery:max_power", val=np.nan, units='kW')
-        self.add_input("data:propulsion:hybrid_powertrain:inverter:power_density", val=70, units='kW/m**3')
+        self.add_input("data:propulsion:hybrid_powertrain:fuel_cell:design_power", val=np.nan, units='W')
+        self.add_input("data:propulsion:hybrid_powertrain:battery:max_power", val=np.nan, units='W')
+        self.add_input("data:propulsion:hybrid_powertrain:inverter:power_density", val=0.070, units='kW/m**3')
         self.add_input("data:propulsion:hybrid_powertrain:inverter:efficiency", val=0.94, units=None)
         self.add_input("data:geometry:hybrid_powertrain:inverter:length_width_ratio", val=2, units=None)
         self.add_input("data:geometry:hybrid_powertrain:inverter:length_height_ratio", val=4, units=None)
 
-        self.add_output("data:propulsion:hybrid_powertrain:inverter:output_power", units='kW')
+        self.add_output("data:propulsion:hybrid_powertrain:inverter:output_power", units='W')
         self.add_output("data:geometry:hybrid_powertrain:inverter:volume", units='m**3')
         self.add_output("data:geometry:hybrid_powertrain:inverter:length", units='m')
         self.add_output("data:geometry:hybrid_powertrain:inverter:width", units='m')
@@ -48,10 +47,10 @@ class ComputeInverter(om.ExplicitComponent):
         batt_max_power = inputs['data:propulsion:hybrid_powertrain:battery:max_power']
         power_density = inputs['data:propulsion:hybrid_powertrain:inverter:power_density']
         eff = inputs['data:propulsion:hybrid_powertrain:inverter:efficiency']
-        L_to_l_ratio = inputs['data:geometry:hybrid_powertrain:bop:length_width_ratio']
-        L_to_h_ratio = inputs['data:geometry:hybrid_powertrain:bop:length_height_ratio']
+        L_to_l_ratio = inputs['data:geometry:hybrid_powertrain:inverter:length_width_ratio']
+        L_to_h_ratio = inputs['data:geometry:hybrid_powertrain:inverter:length_height_ratio']
 
-        max_elec_load = fc_max_power + batt_max_power
+        max_elec_load = (fc_max_power + batt_max_power)
         des_power = max_elec_load * (1 + AF) / eff
         outputs['data:propulsion:hybrid_powertrain:inverter:output_power'] = des_power
 
@@ -60,7 +59,7 @@ class ComputeInverter(om.ExplicitComponent):
             Length = 2 * Width = 4 * Height 
         (Arbitrary values chosen considering common dimensions for inverters).
         """
-        vol = des_power / power_density  # [m**3]
+        vol = des_power / 1000 / power_density  # [m**3]
         L = (L_to_h_ratio * L_to_l_ratio * vol) ** (1/3)
         l = L / L_to_l_ratio
         h = L / L_to_h_ratio
