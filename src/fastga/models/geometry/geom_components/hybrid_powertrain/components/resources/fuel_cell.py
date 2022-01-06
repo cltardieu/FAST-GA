@@ -104,11 +104,8 @@ class FuelCell(object):
     def compute_design_power(self):
         """
         Computes the total required power of the fuel cell system.
-        Since it is used as a means of propulsion (not an APU), a 1.5 sizing factor is introduced based on :
-            https://www.researchgate.net/publication/319935703.
         """
-        sizing_factor = 1.5
-        return sizing_factor * (self.compressor_power + self.required_power)  # [W]
+        return self.compressor_power + self.required_power  # [W]
 
     def compute_design_current_density(self):
         """

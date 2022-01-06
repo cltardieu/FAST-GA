@@ -49,7 +49,7 @@ _LOGGER = logging.getLogger(__name__)
 @RegisterOpenMDAOSystem("fastga.performances.hybridelectricmission", domain=ModelDomain.PERFORMANCE)
 class Mission_HE(om.Group):
     """
-    Computes analytically the fuel mass and the battery energy necessary for each part of the flight cycle.
+    Computes analytically the hydrogen mass and the battery energy necessary for each part of the flight cycle.
 
     Loop on the distance crossed during descent and cruise distance/fuel mass and battery energy.
 
@@ -96,7 +96,7 @@ class Mission_HE(om.Group):
             _compute_taxi(propulsion_id=self.options["propulsion_id"], taxi_out=False,),
             promotes=["*"],
         )
-        self.add_subsystem("update_fw", UpdateFW(), promotes=["*"])
+        self.add_subsystem("update_resources", UpdateResources(), promotes=["*"])
 
         # Solvers setup
         self.nonlinear_solver = om.NonlinearBlockGS()
@@ -121,7 +121,14 @@ class _compute_reserve(om.ExplicitComponent):
         self.add_input("data:mission:sizing:main_route:cruise:duration", np.nan, units="s")
         self.add_input("data:mission:sizing:main_route:reserve:duration", np.nan, units="s")
 
+        self.add_input("data:mission:sizing:main_route:cruise:bat_capacity", np.nan, units="A*h")
+        self.add_input("data:mission:sizing:main_route:cruise:energy", np.nan, units="kW*h")
+        self.add_input("data:mission:sizing:main_route:reserve:power", np.nan, units="kW")
+        self.add_input("settings:electrical_system:system_voltage", np.nan, units="V")
+
         self.add_output("data:mission:sizing:main_route:reserve:fuel", units="kg")
+        self.add_output("data:mission:sizing:main_route:reserve:bat_capacity", units="A*h")
+        self.add_output("data:mission:sizing:main_route:reserve:energy", units="kW*h")
 
         self.declare_partials("*", "*", method="fd")
 
@@ -134,10 +141,31 @@ class _compute_reserve(om.ExplicitComponent):
                 1e-6, inputs["data:mission:sizing:main_route:cruise:duration"]
             )  # avoid 0 division
         )
+
+        energy_reserve = (
+                inputs["data:mission:sizing:main_route:reserve:power"]
+                * inputs["data:mission:sizing:main_route:reserve:duration"]
+        )
+
+        capacity_reserve = (
+                inputs["data:mission:sizing:main_route:reserve:power"]
+                * 1000 * inputs["data:mission:sizing:main_route:reserve:duration"]
+                / inputs["settings:electrical_system:system_voltage"]  # avoid 0 division
+        )
+
         outputs["data:mission:sizing:main_route:reserve:fuel"] = m_reserve
+        outputs["data:mission:sizing:main_route:reserve:bat_capacity"] = capacity_reserve
+        outputs["data:mission:sizing:main_route:reserve:energy"] = energy_reserve
 
 
-class UpdateFW(om.ExplicitComponent):
+class UpdateResources(om.ExplicitComponent):
+    """
+    Computes the total mass of hydrogen, total battery energy and capacity required to complete the mission.
+    Also used to compute the max current at any point during the mission. The max current
+    can be used to size the power electronics (alternatively, max power delivered by the engine divided the voltage
+    of the electrical system gives the max current that can be used to size the power electronics).
+    Based on : FAST-GA-ELEC
+    """
     def setup(self):
 
         self.add_input("data:mission:sizing:taxi_out:fuel", np.nan, units="kg")
@@ -149,7 +177,39 @@ class UpdateFW(om.ExplicitComponent):
         self.add_input("data:mission:sizing:main_route:descent:fuel", np.nan, units="kg")
         self.add_input("data:mission:sizing:taxi_in:fuel", np.nan, units="kg")
 
+        self.add_input("data:mission:sizing:taxi_out:current", np.nan, units="A")
+        self.add_input("data:mission:sizing:takeoff:current", np.nan, units="A")
+        self.add_input("data:mission:sizing:initial_climb:current", np.nan, units="A")
+        self.add_input("data:mission:sizing:main_route:climb:current", np.nan, units="A")
+        self.add_input("data:mission:sizing:main_route:cruise:current", np.nan, units="A")
+        self.add_input("data:mission:sizing:main_route:descent:current", np.nan, units="A")
+        self.add_input("data:mission:sizing:taxi_in:current", np.nan, units="A")
+
+        self.add_input("data:mission:sizing:taxi_out:bat_capacity", np.nan, units="A*h")
+        self.add_input("data:mission:sizing:takeoff:bat_capacity", np.nan, units="A*h")
+        self.add_input("data:mission:sizing:initial_climb:bat_capacity", np.nan, units="A*h")
+        self.add_input("data:mission:sizing:main_route:climb:bat_capacity", np.nan, units="A*h")
+        self.add_input("data:mission:sizing:main_route:cruise:bat_capacity", np.nan, units="A*h")
+        self.add_input("data:mission:sizing:main_route:reserve:bat_capacity", np.nan, units="A*h")
+        self.add_input("data:mission:sizing:main_route:descent:bat_capacity", np.nan, units="A*h")
+        self.add_input("data:mission:sizing:taxi_in:bat_capacity", np.nan, units="A*h")
+
+        self.add_input("data:mission:sizing:taxi_out:energy", np.nan, units="kW*h")
+        self.add_input("data:mission:sizing:takeoff:energy", np.nan, units="kW*h")
+        self.add_input("data:mission:sizing:initial_climb:energy", np.nan, units="kW*h")
+        self.add_input("data:mission:sizing:main_route:climb:energy", np.nan, units="kW*h")
+        self.add_input("data:mission:sizing:main_route:cruise:energy", np.nan, units="kW*h")
+        self.add_input("data:mission:sizing:main_route:reserve:energy", np.nan, units="kW*h")
+        self.add_input("data:mission:sizing:main_route:descent:energy", np.nan, units="kW*h")
+        self.add_input("data:mission:sizing:taxi_in:energy", np.nan, units="kW*h")
+        self.add_input("settings:electrical_system:SOC_in_reserve", 0, units=None)
+        self.add_input("data:mission:sizing:end_of_mission:SOC", 0.2, units=None)
+
         self.add_output("data:mission:sizing:fuel", val=0.0, units="kg")
+        self.add_output("data:mission:sizing:max_current", units="A")
+        self.add_output("data:mission:sizing:min_current", units="A")
+        self.add_output("data:mission:sizing:total_capacity", units="A*h")
+        self.add_output("data:mission:sizing:total_energy", 20, units="kW*h")
 
         self.declare_partials("*", "*", method="fd")
 
@@ -176,6 +236,77 @@ class UpdateFW(om.ExplicitComponent):
         )
 
         outputs["data:mission:sizing:fuel"] = m_total
+
+        current_taxi_out = inputs["data:mission:sizing:taxi_out:current"]
+        current_takeoff = inputs["data:mission:sizing:takeoff:current"]
+        current_initial_climb = inputs["data:mission:sizing:initial_climb:current"]
+        current_climb = inputs["data:mission:sizing:main_route:climb:current"]
+        current_cruise = inputs["data:mission:sizing:main_route:cruise:current"]
+        current_descent = inputs["data:mission:sizing:main_route:descent:current"]
+        current_taxi_in = inputs["data:mission:sizing:taxi_in:current"]
+
+        capacity_taxi_out = inputs["data:mission:sizing:taxi_out:bat_capacity"]
+        capacity_takeoff = inputs["data:mission:sizing:takeoff:bat_capacity"]
+        capacity_initial_climb = inputs["data:mission:sizing:initial_climb:bat_capacity"]
+        capacity_climb = inputs["data:mission:sizing:main_route:climb:bat_capacity"]
+        capacity_cruise = inputs["data:mission:sizing:main_route:cruise:bat_capacity"]
+        capacity_reserve = inputs["data:mission:sizing:main_route:reserve:bat_capacity"]
+        capacity_descent = inputs["data:mission:sizing:main_route:descent:bat_capacity"]
+        capacity_taxi_in = inputs["data:mission:sizing:taxi_in:bat_capacity"]
+
+        energy_taxi_out = inputs["data:mission:sizing:taxi_out:energy"]
+        energy_takeoff = inputs["data:mission:sizing:takeoff:energy"]
+        energy_initial_climb = inputs["data:mission:sizing:initial_climb:energy"]
+        energy_climb = inputs["data:mission:sizing:main_route:climb:energy"]
+        energy_cruise = inputs["data:mission:sizing:main_route:cruise:energy"]
+        energy_reserve = inputs["data:mission:sizing:main_route:reserve:energy"]
+        energy_descent = inputs["data:mission:sizing:main_route:descent:energy"]
+        energy_taxi_in = inputs["data:mission:sizing:taxi_in:energy"]
+
+        SOC_choice = inputs["settings:electrical_system:SOC_in_reserve"]
+        SOC_remaining = inputs["data:mission:sizing:end_of_mission:SOC"]
+
+        energy_total = (
+                energy_taxi_out
+                + energy_takeoff
+                + energy_initial_climb
+                + energy_climb
+                + energy_cruise
+                + energy_reserve
+                + energy_descent
+                + energy_taxi_in
+        )
+
+        capacity_total = (
+                capacity_taxi_out
+                + capacity_takeoff
+                + capacity_initial_climb
+                + capacity_climb
+                + capacity_cruise
+                + capacity_reserve
+                + capacity_descent
+                + capacity_taxi_in
+        )
+
+        max_current = max(current_taxi_out, current_takeoff, current_initial_climb, current_climb, current_cruise,
+                          current_descent, current_taxi_in)
+        min_current = min(current_taxi_out, current_takeoff, current_initial_climb, current_climb, current_cruise,
+                          current_descent, current_taxi_in)
+
+        outputs["data:mission:sizing:max_current"] = max_current
+        outputs["data:mission:sizing:min_current"] = min_current
+        outputs["data:mission:sizing:total_capacity"] = capacity_total
+
+        # Battery energy computation based on the design choice for the user
+        # Choice 1 --> x% battery energy to be remaining at the end of mission for battery safety is included within
+        # the reserve phase
+        # Choice 0 --> x% battery energy to be remaining at the end of mission for battery safety is not included
+        # within the reserve phase
+
+        if SOC_choice == 1:
+            outputs["data:mission:sizing:total_energy"] = energy_total
+        else:
+            outputs["data:mission:sizing:total_energy"] = (1 + SOC_remaining) * energy_total
 
 
 class _Atmosphere(Atmosphere):
@@ -290,16 +421,26 @@ class _compute_taxi(om.ExplicitComponent):
         self._engine_wrapper.setup(self)
 
         self.add_input("data:geometry:propulsion:count", np.nan)
+        self.add_input("settings:electrical_system:system_voltage", np.nan, units="V")
+
         if self.options["taxi_out"]:
             self.add_input("data:mission:sizing:taxi_out:thrust_rate", np.nan)
             self.add_input("data:mission:sizing:taxi_out:duration", np.nan, units="s")
             self.add_input("data:mission:sizing:taxi_out:speed", np.nan, units="m/s")
             self.add_output("data:mission:sizing:taxi_out:fuel", units="kg")
+            self.add_output("data:mission:sizing:taxi_out:power", units='W')
+            self.add_output("data:mission:sizing:taxi_out:bat_capacity", units='A*h')
+            self.add_output("data:mission:sizing:taxi_out:current", units='A')
+            self.add_output("data:mission:sizing:taxi_out:energy", units='kW*h')
         else:
             self.add_input("data:mission:sizing:taxi_in:thrust_rate", np.nan)
             self.add_input("data:mission:sizing:taxi_in:duration", np.nan, units="s")
             self.add_input("data:mission:sizing:taxi_in:speed", np.nan, units="m/s")
             self.add_output("data:mission:sizing:taxi_in:fuel", units="kg")
+            self.add_output("data:mission:sizing:taxi_in:power", units='W')
+            self.add_output("data:mission:sizing:taxi_in:bat_capacity", units='A*h')
+            self.add_output("data:mission:sizing:taxi_in:current", units='A')
+            self.add_output("data:mission:sizing:taxi_in:energy", units='kW*h')
 
         self.declare_partials("*", "*", method="fd")
 
@@ -308,7 +449,7 @@ class _compute_taxi(om.ExplicitComponent):
         if self.options["taxi_out"]:
             _LOGGER.info("Entering mission computation")
 
-        propulsion_model = FuelEngineSet(
+        propulsion_model = HybridEngineSet(
             self._engine_wrapper.get_model(inputs), inputs["data:geometry:propulsion:count"]
         )
         if self.options["taxi_out"]:
@@ -331,6 +472,27 @@ class _compute_taxi(om.ExplicitComponent):
             outputs["data:mission:sizing:taxi_out:fuel"] = fuel_mass
         else:
             outputs["data:mission:sizing:taxi_in:fuel"] = fuel_mass
+
+            # The electrical system voltage is used to compute the current
+            system_voltage = inputs["settings:electrical_system:system_voltage"]
+
+            # Compute the engine power during taxi and subsequently, the current, capacity and energy
+            taxi_power = flight_point.power
+            battery_current = taxi_power / system_voltage
+            taxi_bat_capacity = battery_current * duration
+
+            bat_energy_taxi_out = propulsion_model.get_consumed_energy(flight_point, duration)  # kWh
+
+            if self.options["taxi_out"]:
+                outputs["data:mission:sizing:taxi_out:power"] = taxi_power
+                outputs["data:mission:sizing:taxi_out:current"] = battery_current
+                outputs["data:mission:sizing:taxi_out:bat_capacity"] = taxi_bat_capacity
+                outputs["data:mission:sizing:taxi_out:energy"] = bat_energy_taxi_out
+            else:
+                outputs["data:mission:sizing:taxi_in:power"] = taxi_power
+                outputs["data:mission:sizing:taxi_in:current"] = battery_current
+                outputs["data:mission:sizing:taxi_in:bat_capacity"] = taxi_bat_capacity
+                outputs["data:mission:sizing:taxi_in:energy"] = bat_energy_taxi_out
 
 
 class _compute_climb(DynamicEquilibrium):
@@ -384,7 +546,7 @@ class _compute_climb(DynamicEquilibrium):
             except:
                 _LOGGER.info("Failed to remove {} file!".format(self.options["out_file"]))
 
-        propulsion_model = FuelEngineSet(
+        propulsion_model = HybridEngineSet(
             self._engine_wrapper.get_model(inputs), inputs["data:geometry:propulsion:count"]
         )
         cruise_altitude = inputs["data:mission:sizing:main_route:cruise:altitude"]
@@ -560,7 +722,7 @@ class _compute_cruise(DynamicEquilibrium):
         self.declare_partials("*", "*", method="fd")
 
     def compute(self, inputs, outputs, discrete_inputs=None, discrete_outputs=None):
-        propulsion_model = FuelEngineSet(
+        propulsion_model = HybridEngineSet(
             self._engine_wrapper.get_model(inputs), inputs["data:geometry:propulsion:count"]
         )
         v_tas = inputs["data:TLAR:v_cruise"]
@@ -719,7 +881,7 @@ class _compute_descent(DynamicEquilibrium):
         self.declare_partials("*", "*", method="fd")
 
     def compute(self, inputs, outputs, discrete_inputs=None, discrete_outputs=None):
-        propulsion_model = FuelEngineSet(
+        propulsion_model = HybridEngineSet(
             self._engine_wrapper.get_model(inputs), inputs["data:geometry:propulsion:count"]
         )
         cruise_altitude = inputs["data:mission:sizing:main_route:cruise:altitude"]

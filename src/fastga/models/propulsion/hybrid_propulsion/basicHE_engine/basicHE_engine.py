@@ -16,17 +16,14 @@
 import logging
 import math
 import numpy as np
-import pandas as pd
 from typing import Union, Sequence, Tuple, Optional
 from scipy.interpolate import interp2d
-import os.path as pth
 
 from fastoad.model_base import FlightPoint, Atmosphere
 from fastoad.constants import EngineSetting
 from fastoad.exceptions import FastUnknownEngineSettingError
 
 from .exceptions import FastBasicHEEngineInconsistentInputParametersError
-from . import resources
 
 from fastga.models.propulsion.hybrid_propulsion.base import AbstractHybridPropulsion
 from fastga.models.propulsion.dict import DynamicAttributeDict, AddKeyAttributes
@@ -95,7 +92,7 @@ class BasicHEEngine(AbstractHybridPropulsion):
             "width": 0.091,
             "mass": 22.7,
         }
-        self.map_file_path = pth.join(resources.__path__[0], "FourCylindersAtmospheric.csv")
+        # self.map_file_path = pth.join(resources.__path__[0], "FourCylindersAtmospheric.csv")
         self.prop_layout = prop_layout
         self.max_power = max_power
         self.cruise_altitude = cruise_altitude
@@ -118,11 +115,11 @@ class BasicHEEngine(AbstractHybridPropulsion):
         self.H2_mass_flow = H2_mass_flow
 
         # Evaluate engine volume based on max power @ 0.0m
-        rpm_vect, _, pme_limit_vect, _ = self.read_map(self.map_file_path)
-        volume = self.max_power / np.max(
-            pme_limit_vect * 1e5 * rpm_vect / 240.0
-        )  # conversion rpm to rad/s included
-        self.volume = volume
+        # rpm_vect, _, pme_limit_vect, _ = self.read_map(self.map_file_path)
+        # volume = self.max_power / np.max(
+        #     pme_limit_vect * 1e5 * rpm_vect / 240.0
+        # )  # conversion rpm to rad/s included
+        # self.volume = volume
 
         # Declare sub-components attribute
         self.engine = Engine(power_SL=max_power)
@@ -148,34 +145,34 @@ class BasicHEEngine(AbstractHybridPropulsion):
         if unknown_keys:
             raise FastUnknownEngineSettingError("Unknown flight phases: %s", unknown_keys)
 
-    @staticmethod
-    def read_map(map_file_path):
-
-        data = pd.read_csv(map_file_path)
-        values = data.to_numpy()[:, 1:].tolist()
-        labels = data.to_numpy()[:, 0].tolist()
-        data = pd.DataFrame(values, index=labels)
-        rpm = data.loc["rpm", 0][1:-2].replace("\n", "").replace("\r", "")
-        for idx in range(10):
-            rpm = rpm.replace("  ", " ")
-        rpm_vect = np.array([float(i) for i in rpm.split(" ") if i != ""])
-        pme = data.loc["pme", 0][1:-2].replace("\n", "").replace("\r", "")
-        for idx in range(10):
-            pme = pme.replace("  ", " ")
-        pme_vect = np.array([float(i) for i in pme.split(" ") if i != ""])
-        pme_limit = data.loc["pme_limit", 0][1:-2].replace("\n", "").replace("\r", "")
-        for idx in range(10):
-            pme_limit = pme_limit.replace("  ", " ")
-        pme_limit_vect = np.array([float(i) for i in pme_limit.split(" ") if i != ""])
-        sfc = data.loc["sfc", 0][1:-2].replace("\n", "").replace("\r", "")
-        sfc_lines = sfc[1:-2].split("] [")
-        sfc_matrix = np.zeros(
-            (len(np.array([i for i in sfc_lines[0].split(" ") if i != ""])), len(sfc_lines))
-        )
-        for idx in range(len(sfc_lines)):
-            sfc_matrix[:, idx] = np.array([i for i in sfc_lines[idx].split(" ") if i != ""])
-
-        return rpm_vect, pme_vect, pme_limit_vect, sfc_matrix
+    # @staticmethod
+    # def read_map(map_file_path):
+    #
+    #     data = pd.read_csv(map_file_path)
+    #     values = data.to_numpy()[:, 1:].tolist()
+    #     labels = data.to_numpy()[:, 0].tolist()
+    #     data = pd.DataFrame(values, index=labels)
+    #     rpm = data.loc["rpm", 0][1:-2].replace("\n", "").replace("\r", "")
+    #     for idx in range(10):
+    #         rpm = rpm.replace("  ", " ")
+    #     rpm_vect = np.array([float(i) for i in rpm.split(" ") if i != ""])
+    #     pme = data.loc["pme", 0][1:-2].replace("\n", "").replace("\r", "")
+    #     for idx in range(10):
+    #         pme = pme.replace("  ", " ")
+    #     pme_vect = np.array([float(i) for i in pme.split(" ") if i != ""])
+    #     pme_limit = data.loc["pme_limit", 0][1:-2].replace("\n", "").replace("\r", "")
+    #     for idx in range(10):
+    #         pme_limit = pme_limit.replace("  ", " ")
+    #     pme_limit_vect = np.array([float(i) for i in pme_limit.split(" ") if i != ""])
+    #     sfc = data.loc["sfc", 0][1:-2].replace("\n", "").replace("\r", "")
+    #     sfc_lines = sfc[1:-2].split("] [")
+    #     sfc_matrix = np.zeros(
+    #         (len(np.array([i for i in sfc_lines[0].split(" ") if i != ""])), len(sfc_lines))
+    #     )
+    #     for idx in range(len(sfc_lines)):
+    #         sfc_matrix[:, idx] = np.array([i for i in sfc_lines[idx].split(" ") if i != ""])
+    #
+    #     return rpm_vect, pme_vect, pme_limit_vect, sfc_matrix
 
     def compute_flight_points(self, flight_points: FlightPoint):
         # pylint: disable=too-many-arguments  # they define the trajectory
@@ -313,7 +310,10 @@ class BasicHEEngine(AbstractHybridPropulsion):
 
         pe_power = mech_power + power_losses  # Power received by power electronics
 
-        battery_power = pe_power / self.eta_pe - self.fc_des_power  # Power to be supplied by the battery
+        if engine_setting == "DESCENT": # No power delivered by the FCs in descent
+            battery_power = pe_power / self.eta_pe  # Power to be supplied by the battery
+        else:
+            battery_power = pe_power / self.eta_pe - self.fc_des_power  # Power to be supplied by the battery
 
         return battery_power, sfc_thrust, out_thrust_rate, out_thrust
 
@@ -487,7 +487,10 @@ class BasicHEEngine(AbstractHybridPropulsion):
             real_power = (
                     thrust * atmosphere.true_airspeed / self.propeller_efficiency(thrust, atmosphere)
             )
-            sfc = self.H2_mass_flow / real_power  # [kg/s/W]
+            if engine_setting == "DESCENT":
+                sfc = 0
+            else:
+                sfc = self.H2_mass_flow / real_power  # [kg/s/W]
         else:
             for idx in range(np.size(thrust)):
                 local_atmosphere = Atmosphere(
@@ -499,7 +502,10 @@ class BasicHEEngine(AbstractHybridPropulsion):
                         * atmosphere.true_airspeed[idx]
                         / self.propeller_efficiency(thrust[idx], local_atmosphere)
                 )
-                sfc[idx] = self.H2_mass_flow / real_power[idx]  # [kg/s/W]
+                if engine_setting == "DESCENT":
+                    sfc[idx] = 0
+                else:
+                    sfc[idx] = self.H2_mass_flow / real_power[idx]  # [kg/s/W]
         return sfc, real_power  # [kg/Ws], [W]
 
     def max_thrust(
@@ -596,7 +602,7 @@ class BasicHEEngine(AbstractHybridPropulsion):
             nacelle_length = 1.15 * self.engine.length
             # Based on the length between nose and firewall for TB20 and SR22
         else:
-            nacelle_length = 2.0 * self.engine.length
+            nacelle_length = 1.5 * self.engine.length
 
         # Compute nacelle dimensions
         self.nacelle = Nacelle(
