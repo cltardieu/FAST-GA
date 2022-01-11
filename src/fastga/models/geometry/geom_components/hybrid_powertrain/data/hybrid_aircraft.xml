@@ -606,6 +606,9 @@
           <ref_radius units="m" is_input="True">0.135</ref_radius>
           <power units="W" is_input="False">2</power>
         </compressor>
+        <cooling_intake>
+          <free_stream_speed units="m/s" is_input="True">28</free_stream_speed>
+        </cooling_intake>
         <fuel_cell>
           <fc_type is_input="True">0</fc_type>
           <design_power units="W" is_input="False">33000</design_power>

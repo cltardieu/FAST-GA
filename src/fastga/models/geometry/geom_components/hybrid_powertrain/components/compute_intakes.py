@@ -19,6 +19,7 @@ import openmdao.api as om
 import numpy as np
 from .resources.constants import NACA_INTAKE
 from stdatm.atmosphere import Atmosphere
+from scipy.optimize import fsolve
 
 
 class ComputeIntakes(om.ExplicitComponent):
@@ -36,6 +37,7 @@ class ComputeIntakes(om.ExplicitComponent):
         self.add_input("data:propulsion:hybrid_powertrain:fuel_cell:ox_mass_flow", val=np.nan, units='kg/s')
         self.add_input("data:propulsion:hybrid_powertrain:hex:air_speed", val=np.nan, units='m/s')
         self.add_input("data:geometry:hybrid_powertrain:cooling_intake:nb_intakes", val=np.nan, units=None)
+        self.add_input("data:propulsion:hybrid_powertrain:cooling_intake:free_stream_speed", val=np.nan, units='m/s')
 
         self.add_output("data:geometry:hybrid_powertrain:fc_intake:length", units="mm")
         self.add_output("data:geometry:hybrid_powertrain:fc_intake:width", units="mm")
@@ -43,6 +45,7 @@ class ComputeIntakes(om.ExplicitComponent):
         self.add_output("data:geometry:hybrid_powertrain:cooling_intake:length", units="mm")
         self.add_output("data:geometry:hybrid_powertrain:cooling_intake:width", units="mm")
         self.add_output("data:geometry:hybrid_powertrain:cooling_intake:depth", units="mm")
+        self.add_output("data:aerodynamics:intakes:CD0")
 
         self.declare_partials('*', '*', method="fd")
 
@@ -55,6 +58,7 @@ class ComputeIntakes(om.ExplicitComponent):
         air_speed = inputs['data:propulsion:hybrid_powertrain:hex:air_speed']
         nb_cooling_intakes = inputs['data:geometry:hybrid_powertrain:cooling_intake:nb_intakes']
         ox_mass_flow = inputs['data:propulsion:hybrid_powertrain:fuel_cell:ox_mass_flow']
+        free_stream_speed = inputs['data:propulsion:hybrid_powertrain:cooling_intake:free_stream_speed']
 
         ref_L = NACA_INTAKE['LENGTH']  # [mm]
         ref_w = NACA_INTAKE['WIDTH']  # [mm]
@@ -97,5 +101,97 @@ class ComputeIntakes(om.ExplicitComponent):
         outputs['data:geometry:hybrid_powertrain:cooling_intake:length'] = L_hex
         outputs['data:geometry:hybrid_powertrain:cooling_intake:width'] = w_hex
         outputs['data:geometry:hybrid_powertrain:cooling_intake:depth'] = d_hex
+
+        """ Computing intakes additional drag - Based on FAST-GA-AMPERE """
+
+        initial_outlet_velocity = free_stream_speed / 2.0
+
+        # Inlet losses :
+        # Results from experiments on scoops
+        xi_scoop_ref = 1.7
+        velocity_ratio_ref = 0.8
+
+        # Modifying to simulate a flush inlet with boundary layer control (meaning greater losses wwith same velocity
+        # ratio but no external components)
+        xi_flush = 2.5 * xi_scoop_ref  # 'Local' value
+        velocity_ratio_flush = velocity_ratio_ref
+
+        xi_inlet = xi_flush / (velocity_ratio_flush ** 2)
+
+        # Diffuser losses
+        # 'Local' value of the total pressure losses, usually between 5.0 and 10.0
+        efficiency_diffuser = 0.97  # Assumed that we used a boundary layer control device
+        xi_diffuser_loc = 1. - efficiency_diffuser
+        velocity_ratio_diffuser = air_speed / free_stream_speed
+
+        xi_diffuser = xi_diffuser_loc / (velocity_ratio_diffuser ** 2)
+
+        # Obstructor losses
+        # 'Local' value of the total pressure losses, usually between 5.0 and 10.0
+        xi_obstructor_loc = 0.05
+        velocity_ratio_obstructor = air_speed / free_stream_speed
+
+        xi_obstructor = xi_obstructor_loc / (velocity_ratio_obstructor ** 2)
+
+        # Outlet losses
+        tot_losses = xi_inlet + xi_diffuser + xi_obstructor
+
+        def outlet_losses(outlet_speed):
+            """ Method computing outlet losses based on FAST-GA-AMPERE """
+            outlet_velocity_ratio = outlet_speed / free_stream_speed
+            efficiency_nozzle = 0.90
+            return outlet_velocity_ratio ** 2 - 1. + tot_losses + (1. - efficiency_nozzle) / outlet_velocity_ratio ** 2
+
+        outlet_velocity_array = fsolve(outlet_losses, initial_outlet_velocity)
+        outlet_velocity = outlet_velocity_array[0]
+
+        velocity_ratio_nozzle = outlet_velocity / free_stream_speed
+
+        velocity_ratio_obstructor = air_speed / free_stream_speed
+
+        Cd_intakes = 2. * velocity_ratio_obstructor * (1 - velocity_ratio_nozzle)
+        outputs['data:aerodynamics:intakes:CD0'] = Cd_intakes
+
+    # def inlet_loss(self):
+    #     # Results from experiments on scoops
+    #     xi_scoop_ref = 1.7
+    #     velocity_ratio_ref = 0.8
+    #
+    #     # Modifying to simulate a flush inlet with boundary layer control (meaning greater losses wwith same velocity
+    #     # ratio but no external components)
+    #     xi_flush = 2.5 * xi_scoop_ref  # 'Local' value
+    #     velocity_ratio_flush = velocity_ratio_ref
+    #
+    #     xi_inlet = xi_flush / (velocity_ratio_flush ** (2.0))
+    #
+    #     return xi_inlet
+    #
+    # def diffuser_loss(self, free_stream_speed, radiator_air_speed):
+    #     # 'Local' value of the total pressure losses, usually between 5.0 and 10.0
+    #     efficiency_diffuser = 0.97  # Assumed that we used a boundary layer control device
+    #     xi_diffuser_loc = 1. - efficiency_diffuser
+    #     velocity_ratio_diffuser = radiator_air_speed / free_stream_speed
+    #
+    #     xi_diffuser = xi_diffuser_loc / (velocity_ratio_diffuser ** (2.0))
+    #
+    #     return xi_diffuser
+    #
+    # def obstructor_loss(self, free_stream_speed, radiator_air_speed):
+    #     # 'Local' value of the total pressure losses, usually between 5.0 and 10.0
+    #     xi_obstructor_loc = 0.05
+    #     velocity_ratio_obstructor = radiator_air_speed / free_stream_speed
+    #
+    #     xi_obstructor = xi_obstructor_loc / (velocity_ratio_obstructor ** (2.0))
+    #
+    #     return xi_obstructor
+    #
+    # def outlet_losses(self, outlet_speed, free_stream_speed, radiator_air_speed):
+    #     """ Method computing outlet losses based on FAST-GA-AMPERE """
+    #     other_losses = self.inlet_loss() + self.diffuser_loss(free_stream_speed, radiator_air_speed) + self.obstructor_loss(free_stream_speed, radiator_air_speed)
+    #     outlet_velocity_ratio = outlet_speed / free_stream_speed
+    #     efficiency_nozzle = 0.90
+    #     to_solve = outlet_velocity_ratio ** (2.0) - 1. + other_losses + (
+    #                 1. - efficiency_nozzle) / outlet_velocity_ratio ** (2.0)
+    #     print(('outlet_speed'), outlet_speed, to_solve)
 
 

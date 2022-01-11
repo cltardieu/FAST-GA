@@ -23,6 +23,7 @@ from ..components.cd0_wing import Cd0Wing
 from ..components.cd0_other import Cd0Other
 from ..components.cd0_total import Cd0Total
 from openmdao.core.group import Group
+from src.fastga.models.geometry.geom_components.hybrid_powertrain.components.compute_intakes import ComputeIntakes
 
 
 class Cd0(Group):
@@ -58,6 +59,7 @@ class Cd0(Group):
             self.add_subsystem("cd0_l_gear", Cd0LandingGear(low_speed_aero=True), promotes=["*"])
             self.add_subsystem("cd0_other", Cd0Other(low_speed_aero=True), promotes=["*"])
             self.add_subsystem("cd0_total", Cd0Total(low_speed_aero=True), promotes=["*"])
+            self.add_subsystem("cd0_intakes", ComputeIntakes(), promotes_outputs=["data:aerodynamics:intakes:CD0"])
         else:
             self.add_subsystem(
                 "cd0_wing",
@@ -77,3 +79,4 @@ class Cd0(Group):
             self.add_subsystem("cd0_lg", Cd0LandingGear(), promotes=["*"])
             self.add_subsystem("cd0_other", Cd0Other(), promotes=["*"])
             self.add_subsystem("cd0_total", Cd0Total(), promotes=["*"])
+            self.add_subsystem("cd0_intakes", ComputeIntakes(), promotes_outputs=["data:aerodynamics:intakes:CD0"])

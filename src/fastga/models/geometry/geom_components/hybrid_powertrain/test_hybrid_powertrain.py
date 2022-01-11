@@ -24,17 +24,17 @@ def test_compute_fuel_cells():
     # Run problem and check obtained value(s) is/(are) correct
     problem = run_system(ComputeFuelCells(), ivc)
     nb_cells = problem.get_val("data:geometry:hybrid_powertrain:fuel_cell:number_cells", units=None)
-    assert nb_cells == pytest.approx(473, abs=5)
+    assert nb_cells == pytest.approx(315, abs=5)
     ox_flow = problem.get_val("data:propulsion:hybrid_powertrain:fuel_cell:ox_mass_flow", units='kg/s')
     assert ox_flow == pytest.approx(5.74, abs=1e-1)
     des_power = problem.get_val("data:propulsion:hybrid_powertrain:fuel_cell:design_power", units='W')
-    assert des_power == pytest.approx(33000, abs=1000)
+    assert des_power == pytest.approx(22000, abs=1000)
     vol = problem.get_val("data:geometry:hybrid_powertrain:fuel_cell:stack_volume", units='m**3')
-    assert vol == pytest.approx(0.03197039, abs=1e-3)
+    assert vol == pytest.approx(0.02363032, abs=1e-3)
     eff = problem.get_val("data:propulsion:hybrid_powertrain:fuel_cell:efficiency", units=None)
     assert eff == pytest.approx(0.5, abs=1e-1)
     P_cooling = problem.get_val("data:propulsion:hybrid_powertrain:fuel_cell:cooling_power", units='W')
-    assert P_cooling == pytest.approx(31554, abs=1000)
+    assert P_cooling == pytest.approx(21036, abs=1000)
 
 
 def test_compute_compressor():
@@ -99,6 +99,8 @@ def test_compute_intakes():
     assert cooling_intake_l == pytest.approx(0.168, abs=1e-1)
     cooling_intake_d = problem.get_val("data:geometry:hybrid_powertrain:cooling_intake:depth", units='m')
     assert cooling_intake_d == pytest.approx(0.042, abs=1e-1)
+    cd0 = problem.get_val("data:aerodynamics:intakes:CD0")
+    assert cd0 == pytest.approx(0.43279067, abs=1e-1)
 
 
 def test_compute_battery():

@@ -70,7 +70,14 @@ class BasicHEEngine(AbstractHybridPropulsion):
             max_torque,
             eta_pe,
             fc_des_power,
-            H2_mass_flow
+            H2_mass_flow,
+            pe_specific_power,
+            cables_lsw,
+            cabin_length,
+            nb_blades,
+            prop_diameter,
+            nb_propellers,
+            prop_red_factor
     ):
         """
         Parametric hydrogen-powered Hybrid Electric propulsion engine.
@@ -113,6 +120,13 @@ class BasicHEEngine(AbstractHybridPropulsion):
         self.eta_pe = eta_pe  # Efficiency of power electronics
         self.fc_des_power = fc_des_power
         self.H2_mass_flow = H2_mass_flow
+        self.pe_specific_power = pe_specific_power
+        self.cables_lsw = cables_lsw
+        self.cabin_length = cabin_length
+        self.nb_blades = nb_blades
+        self.prop_diameter = prop_diameter
+        self.nb_propellers = nb_propellers
+        self.prop_red_factor = prop_red_factor
 
         # Evaluate engine volume based on max power @ 0.0m
         # rpm_vect, _, pme_limit_vect, _ = self.read_map(self.map_file_path)
@@ -298,7 +312,7 @@ class BasicHEEngine(AbstractHybridPropulsion):
 
         # Now battery required power [W] can be computed taking into account the power delivered by the fuel cells :
         # Compute motor power losses
-        alpha, beta = self.compute_elec_motor(self.nominal_torque)
+        alpha, beta, _ = self.compute_elec_motor(self.nominal_torque)
         torque = 9.554140127 * mech_power / self.motor_speed  # Torque in [N*m]
 
         # Check torque is within limits
@@ -310,7 +324,7 @@ class BasicHEEngine(AbstractHybridPropulsion):
 
         pe_power = mech_power + power_losses  # Power received by power electronics
 
-        if engine_setting == "DESCENT": # No power delivered by the FCs in descent
+        if engine_setting == "DESCENT":  # No power delivered by the FCs in descent
             battery_power = pe_power / self.eta_pe  # Power to be supplied by the battery
         else:
             battery_power = pe_power / self.eta_pe - self.fc_des_power  # Power to be supplied by the battery
@@ -523,7 +537,7 @@ class BasicHEEngine(AbstractHybridPropulsion):
         upper_bound = np.interp(atmosphere.true_airspeed, self.speed_CL, self.thrust_limit_CL)
         altitude = atmosphere.get_altitude(altitude_in_feet=False)
         thrust_max_propeller = lower_bound + (upper_bound - lower_bound) * np.minimum(altitude, self.cruise_altitude) \
-            / self.cruise_altitude
+                               / self.cruise_altitude
 
         # Found thrust relative to electric engine maximum power @ given altitude and speed:
         # calculates first thrust interpolation vector (between min and max of propeller table) and associated
@@ -573,18 +587,24 @@ class BasicHEEngine(AbstractHybridPropulsion):
         return max_thrust
 
     def compute_weight(self) -> float:
-        """
-        Computes weight of installed propulsion (engine, nacelle and propeller) depending on maximum power.
-        Uses model described in : Gudmundsson, Snorri. General aviation aircraft design: Applied Methods and Procedures.
-        Butterworth-Heinemann, 2013. Equation (6-44)
 
-        """
+        """ Computes weight based on FAST-GA-ELEC methods """
+        # Power electronics mass
+        M_pe = self.max_power / self.pe_specific_power
 
-        power_sl = self.max_power / 745.7  # conversion to european hp
-        uninstalled_weight = (power_sl - 21.55) / 0.5515
-        self.engine.mass = uninstalled_weight
+        # Cables mass - based on a model described in FAST-GA-ELEC
+        M_cables = 2 * 2.20462 * self.cables_lsw * self.cabin_length / 1000  # Mass multiplied by 2 for redundancy
 
-        return uninstalled_weight
+        # Motor mass
+        M_motor = self.compute_elec_motor()[2]
+
+        # Propeller mass
+        M_prop = self.prop_red_factor * 31.92 * self.nb_propellers * (self.nb_blades ** 0.391) * (
+                (self.prop_diameter * self.max_power * 0.00134102 / 1000) ** 0.782)
+
+        # Total mass
+        M_tot = M_pe + M_cables + M_motor + M_prop
+        return M_tot
 
     def compute_dimensions(self) -> (float, float, float, float):
         """
@@ -680,7 +700,9 @@ class BasicHEEngine(AbstractHybridPropulsion):
         mot_alpha = alpha_ref * (T_scale_ratio ** (-5 / 3.5))
         mot_beta = beta_ref * (T_scale_ratio ** (3 / 3.5))
 
-        return mot_alpha, mot_beta
+        mot_mass = mass_ref * (T_scale_ratio ** (3 / 3.5))
+
+        return mot_alpha, mot_beta, mot_mass
 
 
 @AddKeyAttributes(ENGINE_LABELS)
