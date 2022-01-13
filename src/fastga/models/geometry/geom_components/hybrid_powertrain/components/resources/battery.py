@@ -16,6 +16,7 @@
 
 import math
 import numpy as np
+from .constants import CELL_WEIGHT_FRACTION
 
 CellTypes = {
     'LG-HG2': {  # Type '1' in input
@@ -201,7 +202,7 @@ class Battery(object):
 
     def compute_weight(self):
         """ Based on https://commons.erau.edu/edt/393 """
-        CELL_WEIGHT_FRACTION = 0.58  # Cell weight fraction used for the computation of weight - Empirical parameter
+        # CELL_WEIGHT_FRACTION = 0.58  # Cell weight fraction used for the computation of weight - Empirical parameter
         return self.compute_nb_cells_par() * self.compute_nb_cells_ser() * self.cell_m / CELL_WEIGHT_FRACTION  # [kg]
 
     def depth_of_discharge(self):

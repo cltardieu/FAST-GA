@@ -32,24 +32,24 @@ class ComputeH2Storage(om.ExplicitComponent):
         self.add_input("data:propulsion:hybrid_powertrain:fuel_cell:design_power", val=np.nan, units='W')
         self.add_input("data:mission:sizing:endurance", val=np.nan, units='min')
         self.add_input("data:propulsion:hybrid_powertrain:h2_storage:pressure", val=np.nan, units='Pa')
-        # self.add_input("data:propulsion:hybrid_powertrain:h2_storage:temperature", val=np.nan, units='K')
-        self.add_input("data:geometry:hybrid_powertrain:h2_storage:nb_tanks", val=np.nan, units='K')
+        self.add_input("data:geometry:hybrid_powertrain:h2_storage:nb_tanks", val=np.nan, units=None)
         self.add_input("data:geometry:hybrid_powertrain:h2_storage:length_radius_ratio", val=np.nan, units=None)
         self.add_input("data:geometry:hybrid_powertrain:h2_storage:fos", val=2.25, units=None,
                        desc='Factor of safety defined by industry standard specifications')
         self.add_input("data:geometry:hybrid_powertrain:h2_storage:maximum_stress", val=np.nan, units='Pa')
-        self.add_input("data:geometry:hybrid_powertrain:h2_storage:mass_fitting_factor", val=1, units=None,
-                       desc='Parameter to adjust the mass of the fuel tanks arguably too high')
+        # self.add_input("data:geometry:hybrid_powertrain:h2_storage:mass_fitting_factor", val=1, units=None,
+        #                desc='Parameter to adjust the mass of the fuel tanks arguably too high')
         self.add_input("data:geometry:hybrid_powertrain:h2_storage:tank_density", val=np.nan, units='kg/m**3')
 
         self.add_output("data:geometry:hybrid_powertrain:h2_storage:total_tanks_volume", units='m**3',
                         desc='Total volume of the tank(s)')
         self.add_output("data:geometry:hybrid_powertrain:h2_storage:single_tank_volume", units='m**3')
+        self.add_output("data:geometry:hybrid_powertrain:h2_storage:tank_internal_volume", units='m**3')
         self.add_output("data:geometry:hybrid_powertrain:h2_storage:tank_internal_radius", units='m')
         self.add_output("data:geometry:hybrid_powertrain:h2_storage:tank_internal_length", units='m')
         self.add_output("data:geometry:hybrid_powertrain:h2_storage:wall_thickness", units='m')
-        self.add_output("data:weight:hybrid_powertrain:h2_storage:single_tank_mass", units='kg')
-        self.add_output("data:weight:hybrid_powertrain:h2_storage:total_tanks_mass", units='kg')
+        # self.add_output("data:weight:hybrid_powertrain:h2_storage:single_tank_mass", units='kg')
+        # self.add_output("data:weight:hybrid_powertrain:h2_storage:total_tanks_mass", units='kg')
 
         self.declare_partials('*', '*', method="fd")
 
@@ -64,7 +64,7 @@ class ComputeH2Storage(om.ExplicitComponent):
         FoS = inputs['data:geometry:hybrid_powertrain:h2_storage:fos']  # Factor of safety
         max_stress = inputs['data:geometry:hybrid_powertrain:h2_storage:maximum_stress']
         density = inputs['data:geometry:hybrid_powertrain:h2_storage:tank_density']
-        mass_fit = inputs['data:geometry:hybrid_powertrain:h2_storage:mass_fitting_factor']
+        # mass_fit = inputs['data:geometry:hybrid_powertrain:h2_storage:mass_fitting_factor']
 
         T_H = Atmosphere(altitude=0).temperature  # [K]
 
@@ -90,13 +90,14 @@ class ComputeH2Storage(om.ExplicitComponent):
         tot_tank_volume = tank_volume * nb_tanks  # [m**3]
 
         """ Determining tank(s) mass : a fitting parameter is added to adjust the results """
-        tank_mass = (tank_volume - V_tank_int) * density * mass_fit  # [kg]
-        tot_tank_mass = nb_tanks * tank_mass
+        # tank_mass = (tank_volume - V_tank_int) * density * mass_fit  # [kg]
+        # tot_tank_mass = nb_tanks * tank_mass
 
         outputs['data:geometry:hybrid_powertrain:h2_storage:total_tanks_volume'] = tot_tank_volume
         outputs['data:geometry:hybrid_powertrain:h2_storage:single_tank_volume'] = tank_volume
+        outputs['data:geometry:hybrid_powertrain:h2_storage:tank_internal_volume'] = V_tank_int
         outputs['data:geometry:hybrid_powertrain:h2_storage:tank_internal_radius'] = tank_radius
         outputs['data:geometry:hybrid_powertrain:h2_storage:tank_internal_length'] = tank_length
         outputs['data:geometry:hybrid_powertrain:h2_storage:wall_thickness'] = thickness
-        outputs['data:weight:hybrid_powertrain:h2_storage:single_tank_mass'] = tank_mass
-        outputs['data:weight:hybrid_powertrain:h2_storage:total_tanks_mass'] = tot_tank_mass
+        # outputs['data:weight:hybrid_powertrain:h2_storage:single_tank_mass'] = tank_mass
+        # outputs['data:weight:hybrid_powertrain:h2_storage:total_tanks_mass'] = tot_tank_mass

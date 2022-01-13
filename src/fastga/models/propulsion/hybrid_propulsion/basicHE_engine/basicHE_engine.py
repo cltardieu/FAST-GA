@@ -313,7 +313,7 @@ class BasicHEEngine(AbstractHybridPropulsion):
         # Now battery required power [W] can be computed taking into account the power delivered by the fuel cells :
         # Compute motor power losses
         alpha, beta, _ = self.compute_elec_motor(self.nominal_torque)
-        torque = 9.554140127 * mech_power / self.motor_speed  # Torque in [N*m]
+        torque = 9.554140127 * mech_power / self.motor_speed  # Torque in [N*m] - conversion from rpm to rad/s
 
         # Check torque is within limits
         if torque > self.max_torque:
@@ -324,7 +324,7 @@ class BasicHEEngine(AbstractHybridPropulsion):
 
         pe_power = mech_power + power_losses  # Power received by power electronics
 
-        if engine_setting == "DESCENT":  # No power delivered by the FCs in descent
+        if engine_setting == EngineSetting.DESCENT:  # No power delivered by the FCs in descent
             battery_power = pe_power / self.eta_pe  # Power to be supplied by the battery
         else:
             battery_power = pe_power / self.eta_pe - self.fc_des_power  # Power to be supplied by the battery
@@ -467,7 +467,7 @@ class BasicHEEngine(AbstractHybridPropulsion):
 
     def compute_max_power(self, flight_points: FlightPoint) -> Union[float, Sequence]:
         """
-        Compute the ICE maximum power @ given flight-point.
+        Compute engine maximum power @ given flight-point.
 
         :param flight_points: current flight point(s)
         :return: maximum power in kW
@@ -501,7 +501,7 @@ class BasicHEEngine(AbstractHybridPropulsion):
             real_power = (
                     thrust * atmosphere.true_airspeed / self.propeller_efficiency(thrust, atmosphere)
             )
-            if engine_setting == "DESCENT":
+            if engine_setting == EngineSetting.DESCENT:
                 sfc = 0
             else:
                 sfc = self.H2_mass_flow / real_power  # [kg/s/W]
@@ -516,7 +516,7 @@ class BasicHEEngine(AbstractHybridPropulsion):
                         * atmosphere.true_airspeed[idx]
                         / self.propeller_efficiency(thrust[idx], local_atmosphere)
                 )
-                if engine_setting == "DESCENT":
+                if engine_setting == EngineSetting.DESCENT:
                     sfc[idx] = 0
                 else:
                     sfc[idx] = self.H2_mass_flow / real_power[idx]  # [kg/s/W]

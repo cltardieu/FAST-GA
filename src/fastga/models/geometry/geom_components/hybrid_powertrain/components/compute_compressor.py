@@ -35,12 +35,12 @@ class ComputeCompressor(om.ExplicitComponent):
         self.add_input("data:propulsion:hybrid_powertrain:compressor:motor_efficiency", val=np.nan, units=None)
         self.add_input("data:propulsion:hybrid_powertrain:compressor:delta", val=np.nan, units=None)
         self.add_input("data:propulsion:hybrid_powertrain:compressor:specific_work", val=np.nan, units="J/kg")
-        self.add_input("data:propulsion:hybrid_powertrain:compressor:ref_mass", val=np.nan, units="kg")
-        self.add_input("data:propulsion:hybrid_powertrain:compressor:ref_radius", val=np.nan, units="m")
+        # self.add_input("data:propulsion:hybrid_powertrain:compressor:ref_mass", val=np.nan, units="kg")
+        # self.add_input("data:propulsion:hybrid_powertrain:compressor:ref_radius", val=np.nan, units="m")
 
         self.add_output("data:propulsion:hybrid_powertrain:compressor:power", units='W')
         self.add_output("data:geometry:hybrid_powertrain:compressor:radius", units="m")
-        self.add_output("data:weight:hybrid_powertrain:compressor:mass", units="kg")
+        # self.add_output("data:weight:hybrid_powertrain:compressor:mass", units="kg")
 
         self.declare_partials('*', '*', method="fd")
 
@@ -54,8 +54,8 @@ class ComputeCompressor(om.ExplicitComponent):
         motor_eff = inputs['data:propulsion:hybrid_powertrain:compressor:motor_efficiency']
         delta = inputs["data:propulsion:hybrid_powertrain:compressor:delta"]
         W = inputs["data:propulsion:hybrid_powertrain:compressor:specific_work"]
-        M_ref = inputs["data:propulsion:hybrid_powertrain:compressor:ref_mass"]
-        R_ref = inputs["data:propulsion:hybrid_powertrain:compressor:ref_radius"]
+        # M_ref = inputs["data:propulsion:hybrid_powertrain:compressor:ref_mass"]
+        # R_ref = inputs["data:propulsion:hybrid_powertrain:compressor:ref_radius"]
 
         # Determining air mass flow rate of the stack
         M_O2 = 31.998  # [g/mol] - Molar mass of oxygen
@@ -82,8 +82,8 @@ class ComputeCompressor(om.ExplicitComponent):
         k = 2 ** 0.25 * np.pi ** 0.5
 
         R = delta * Q_v ** 0.5 / (k * W ** 0.25)
-        M = M_ref * (R / R_ref) ** 3
+        # M = M_ref * (R / R_ref) ** 3
 
         outputs["data:geometry:hybrid_powertrain:compressor:radius"] = R
-        outputs["data:weight:hybrid_powertrain:compressor:mass"] = M
+        # outputs["data:weight:hybrid_powertrain:compressor:mass"] = M
 

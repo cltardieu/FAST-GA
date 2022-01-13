@@ -31,19 +31,19 @@ class ComputeHex(om.ExplicitComponent):
 
         self.add_input("data:propulsion:hybrid_powertrain:hex:air_speed", val=np.nan, units='m/s')
         self.add_input("data:propulsion:hybrid_powertrain:fuel_cell:operating_temperature", val=np.nan, units='K')
-        self.add_input("data:geometry:hybrid_powertrain:hex:radiator_surface_density", val=np.nan, units='g/cm**2')
+        # self.add_input("data:geometry:hybrid_powertrain:hex:radiator_surface_density", val=np.nan, units='g/cm**2')
         self.add_input("data:propulsion:hybrid_powertrain:fuel_cell:cooling_power", val=np.nan, units='W')
         self.add_input("data:mission:sizing:main_route:cruise:altitude", val=np.nan, units='m')
 
         self.add_output("data:geometry:hybrid_powertrain:hex:area", units="m**2")
-        self.add_output("data:weight:hybrid_powertrain:hex:radiator_mass", units='kg')
+        # self.add_output("data:weight:hybrid_powertrain:hex:radiator_mass", units='kg')
 
         self.declare_partials('*', '*', method="fd")
 
     def compute(self, inputs, outputs, discrete_inputs=None, discrete_outputs=None):
         air_speed = inputs['data:propulsion:hybrid_powertrain:hex:air_speed']
         op_T = inputs['data:propulsion:hybrid_powertrain:fuel_cell:operating_temperature']
-        surface_density = inputs['data:geometry:hybrid_powertrain:hex:radiator_surface_density']
+        # surface_density = inputs['data:geometry:hybrid_powertrain:hex:radiator_surface_density']
         fc_cooling_power = inputs['data:propulsion:hybrid_powertrain:fuel_cell:cooling_power']
         ext_T = Atmosphere(altitude=inputs['data:mission:sizing:main_route:cruise:altitude']).temperature  # [K]
 
@@ -58,5 +58,5 @@ class ComputeHex(om.ExplicitComponent):
         outputs['data:geometry:hybrid_powertrain:hex:area'] = needed_area
 
         # Determining mass of the radiator
-        M_rad = needed_area * 10000 * surface_density
-        outputs['data:weight:hybrid_powertrain:hex:radiator_mass'] = M_rad
+        # M_rad = needed_area * 10000 * surface_density
+        # outputs['data:weight:hybrid_powertrain:hex:radiator_mass'] = M_rad
