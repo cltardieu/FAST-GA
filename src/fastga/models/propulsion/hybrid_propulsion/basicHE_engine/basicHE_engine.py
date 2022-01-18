@@ -324,7 +324,7 @@ class BasicHEEngine(AbstractHybridPropulsion):
 
         pe_power = mech_power + power_losses  # Power received by power electronics
 
-        if engine_setting == EngineSetting.DESCENT:  # No power delivered by the FCs in descent
+        if engine_setting == EngineSetting.IDLE:  # No power delivered by the FCs in descent
             battery_power = pe_power / self.eta_pe  # Power to be supplied by the battery
         else:
             battery_power = pe_power / self.eta_pe - self.fc_des_power  # Power to be supplied by the battery
@@ -501,7 +501,7 @@ class BasicHEEngine(AbstractHybridPropulsion):
             real_power = (
                     thrust * atmosphere.true_airspeed / self.propeller_efficiency(thrust, atmosphere)
             )
-            if engine_setting == EngineSetting.DESCENT:
+            if engine_setting == EngineSetting.IDLE:
                 sfc = 0
             else:
                 sfc = self.H2_mass_flow / real_power  # [kg/s/W]
@@ -516,7 +516,7 @@ class BasicHEEngine(AbstractHybridPropulsion):
                         * atmosphere.true_airspeed[idx]
                         / self.propeller_efficiency(thrust[idx], local_atmosphere)
                 )
-                if engine_setting == EngineSetting.DESCENT:
+                if engine_setting == EngineSetting.IDLE:
                     sfc[idx] = 0
                 else:
                     sfc[idx] = self.H2_mass_flow / real_power[idx]  # [kg/s/W]
