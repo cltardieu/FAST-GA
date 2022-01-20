@@ -1037,8 +1037,8 @@ class _compute_descent(DynamicEquilibrium):
         current_descent = 0.0
         bat_capacity_descent = 0.0
         bat_energy_descent = 0.0
-        atm_0 = Atmosphere(0.0)
-        warning = False
+        # atm_0 = Atmosphere(0.0)
+        # warning = False
 
         # Calculate constant speed (cos(gamma)~1) and corresponding descent angle
         # FIXME: VCAS constant-speed strategy is specific to ICE-propeller configuration, should be an input!

@@ -18,6 +18,7 @@ import numpy as np
 from openmdao.core.explicitcomponent import ExplicitComponent
 from src.fastga.models.geometry.geom_components.hybrid_powertrain.components.resources.constants import CELL_WEIGHT_FRACTION
 
+
 class ComputeBatteryWeight(ExplicitComponent):
     """
     Weight estimation for battery

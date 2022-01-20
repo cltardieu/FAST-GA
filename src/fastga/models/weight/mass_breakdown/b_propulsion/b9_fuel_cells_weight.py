@@ -1,5 +1,5 @@
 """
-Estimation of fuel cells system weight
+Estimation of fuel cell stacks weight
 """
 #  This file is part of FAST : A framework for rapid Overall Aircraft Design
 #  Copyright (C) 2020  ONERA & ISAE-SUPAERO
@@ -20,7 +20,7 @@ from openmdao.core.explicitcomponent import ExplicitComponent
 
 class ComputeFuelCellWeight(ExplicitComponent):
     """
-    Weight estimation for fuel cells system.
+    Weight estimation for fuel cells stacks.
     """
 
     def setup(self):

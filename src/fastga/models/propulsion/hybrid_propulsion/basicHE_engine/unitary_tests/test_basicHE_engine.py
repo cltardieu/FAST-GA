@@ -782,7 +782,20 @@ EFFICIENCY_CL = np.array(
         ],
     ]
 )
+# Reducing thrust array values since they are proper to IC engine and not to an electrical one
+FITTING_FACTOR = 2
 
+THRUST_SL = THRUST_SL / FITTING_FACTOR
+THRUST_SL_LIMIT = THRUST_SL_LIMIT / FITTING_FACTOR
+SPEED = SPEED / FITTING_FACTOR
+THRUST_CL = THRUST_CL / FITTING_FACTOR
+THRUST_CL_LIMIT = THRUST_CL_LIMIT / FITTING_FACTOR
+
+# Reducing efficiency values
+EFF_FACTOR = 0.7
+
+EFFICIENCY_CL = EFFICIENCY_CL / EFF_FACTOR
+EFFICIENCY_SL = EFFICIENCY_SL / EFF_FACTOR
 
 def test_compute_flight_points():
     # BasicHEEngine(max_power(W), cruise_altitude(m), cruise_speed(m/s), prop_layout, speed_SL/CL...,
@@ -819,19 +832,20 @@ def test_compute_flight_points():
     flight_point = FlightPoint(
         mach=0.3, altitude=0.0, engine_setting=EngineSetting.CLIMB.value, thrust=480.58508079
     )  # with engine_setting as int
-    flight_point.add_field("battery_power", annotation_type=float)
+    # flight_point.add_field("battery_power", annotation_type=float)
     engine.compute_flight_points(flight_point)
+    print(flight_point.battery_power)
     np.testing.assert_allclose(flight_point.thrust_rate, 0.5, rtol=1e-2)
-    np.testing.assert_allclose(flight_point.sfc, 0.001086, rtol=1e-4)
-    np.testing.assert_allclose(flight_point.battery_power, 1.356846e-05, rtol=1e-2)
+    np.testing.assert_allclose(flight_point.sfc, 0.001086176040134082, rtol=1e-4)
+    np.testing.assert_allclose(flight_point.battery_power, 65734, rtol=1000)
 
     flight_point = FlightPoint(
         mach=0.0, altitude=0.0, engine_setting=EngineSetting.TAKEOFF, thrust_rate=0.8
     )  # with engine_setting as EngineSetting
     engine.compute_flight_points(flight_point)
     np.testing.assert_allclose(flight_point.thrust, 3992.47453905 * 0.8, rtol=1e-2)
-    np.testing.assert_allclose(flight_point.sfc, 0.001086, rtol=1e-2)
-    np.testing.assert_allclose(flight_point.battery_power, 1.356846e-05, rtol=1e-2)
+    np.testing.assert_allclose(flight_point.sfc, 0.00016343247617936238, rtol=1e-4)
+    np.testing.assert_allclose(flight_point.battery_power, 65734, rtol=1000)
 
     # Test full arrays
     # 2D arrays are used, where first line is for thrust rates, and second line
@@ -842,6 +856,10 @@ def test_compute_flight_points():
     altitudes = [0, 0, 0, 1000, 2400]
     thrust_rates = [0.8, 0.5, 0.5, 0.4, 0.7]
     thrusts = [3193.97963124, 480.58508079, 480.58508079, 209.52130202, 339.32315391]
+    # Reducing thrusts for an electric engine case
+    RED_FACTOR = 3
+    thrusts = thrusts / RED_FACTOR
+
     engine_settings = [
         EngineSetting.TAKEOFF,
         EngineSetting.TAKEOFF,
@@ -859,6 +877,7 @@ def test_compute_flight_points():
         thrust_rate=thrust_rates + [0.0] * 5,
         thrust=[0.0] * 5 + thrusts,
     )
+    flight_point.add_field()
     engine.compute_flight_points(flight_points)
     np.testing.assert_allclose(flight_points.sfc, expected_sfc + expected_sfc, rtol=1e-4)
     np.testing.assert_allclose(flight_points.thrust_rate, thrust_rates + thrust_rates, rtol=1e-4)

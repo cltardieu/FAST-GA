@@ -308,7 +308,7 @@ class BasicHEEngine(AbstractHybridPropulsion):
         # Now SFC [kg/Ws] can be computed and converted to sfc_thrust [kg/N] to match computation from turboshaft
         sfc, mech_power = self.sfc(out_thrust, engine_setting, atmosphere)
         sfc_time = mech_power * sfc  # SFC in [kg/s]
-        sfc_thrust = sfc_time / np.maximum(out_thrust, 1e-6)  # Avoid 0 divisionn - [kg/N]
+        sfc_thrust = sfc_time / np.maximum(out_thrust, 1e-6)  # Avoid 0 division - [kg/N]
 
         # Now battery required power [W] can be computed taking into account the power delivered by the fuel cells :
         # Compute motor power losses
@@ -316,18 +316,18 @@ class BasicHEEngine(AbstractHybridPropulsion):
         torque = 9.554140127 * mech_power / self.motor_speed  # Torque in [N*m] - conversion from rpm to rad/s
 
         # Check torque is within limits
-        if torque > self.max_torque:
-            raise Exception("Maximum motor torque value [{}Nm] exceeded!".format(
-                self.max_torque))
-
+        if np.max(torque) > self.max_torque:
+            # raise Exception("Maximum motor torque value [{}Nm] exceeded!".format(self.max_torque))
+            pass
         power_losses = (alpha * torque ** 2) + (beta * self.motor_speed ** 1.5)
 
         pe_power = mech_power + power_losses  # Power received by power electronics
 
-        if engine_setting == EngineSetting.IDLE:  # No power delivered by the FCs in descent
-            battery_power = pe_power / self.eta_pe  # Power to be supplied by the battery
-        else:
-            battery_power = pe_power / self.eta_pe - self.fc_des_power  # Power to be supplied by the battery
+        battery_power = np.where(
+            engine_setting == EngineSetting.IDLE,
+            pe_power/self.eta_pe,
+            pe_power/self.eta_pe - self.fc_des_power
+        )
 
         return battery_power, sfc_thrust, out_thrust_rate, out_thrust
 
@@ -516,7 +516,7 @@ class BasicHEEngine(AbstractHybridPropulsion):
                         * atmosphere.true_airspeed[idx]
                         / self.propeller_efficiency(thrust[idx], local_atmosphere)
                 )
-                if engine_setting == EngineSetting.IDLE:
+                if engine_setting[idx] == EngineSetting.IDLE:
                     sfc[idx] = 0
                 else:
                     sfc[idx] = self.H2_mass_flow / real_power[idx]  # [kg/s/W]
@@ -570,7 +570,7 @@ class BasicHEEngine(AbstractHybridPropulsion):
                 local_atmosphere.mach = atmosphere.mach[idx] * np.ones(np.size(thrust_interp[idx]))
                 propeller_efficiency = self.propeller_efficiency(thrust_interp[idx], local_atmosphere)
                 mechanical_power = thrust_interp[idx] * atmosphere.true_airspeed[idx] / propeller_efficiency
-                if np.min(mechanical_power) > max_power:  # take the lower bound efficiency for calculation
+                if np.min(mechanical_power) > max_power[idx]:  # take the lower bound efficiency for calculation
                     efficiency_relative_error = 1
                     local_atmosphere = Atmosphere(altitude[idx], altitude_in_feet=False)
                     local_atmosphere.mach = atmosphere.mach[idx]
@@ -582,7 +582,7 @@ class BasicHEEngine(AbstractHybridPropulsion):
                                                            / efficiency_relative_error)
                         propeller_efficiency = propeller_efficiency_new
                 else:
-                    max_thrust[idx] = np.interp(max_power, mechanical_power, thrust_interp[idx])
+                    max_thrust[idx] = max(np.interp(max_power, mechanical_power, thrust_interp[idx]))
 
         return max_thrust
 
