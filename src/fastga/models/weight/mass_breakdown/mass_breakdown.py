@@ -27,6 +27,15 @@ from fastga.models.weight.mass_breakdown.b_propulsion import (
     ComputeEngineWeight,
     ComputeFuelLinesWeight,
     ComputeUnusableFuelWeight,
+    ComputeEEngineWeight,
+    ComputeCablesWeight,
+    ComputePowerElecWeight,
+    ComputePropellerWeight,
+    ComputeBatteryWeight,
+    ComputeFuelCellWeight,
+    ComputeBoPWeight,
+    ComputeInverterWeight,
+    ComputeH2StorageWeight,
 )
 from fastga.models.weight.mass_breakdown.c_systems import (
     ComputePowerSystemsWeight,
@@ -35,7 +44,7 @@ from fastga.models.weight.mass_breakdown.c_systems import (
 )
 from fastga.models.weight.mass_breakdown.d_furniture import ComputePassengerSeatsWeight
 from fastga.models.weight.mass_breakdown.payload import ComputePayload
-from fastga.models.weight.mass_breakdown.update_mlw_and_mzfw import UpdateMLWandMZFW
+# from fastga.models.weight.mass_breakdown.update_mlw_and_mzfw import UpdateMLWandMZFW
 
 from fastga.models.options import PAYLOAD_FROM_NPAX
 
@@ -67,7 +76,12 @@ class MassBreakdown(om.Group):
             ComputeOperatingWeightEmpty(propulsion_id=self.options["propulsion_id"]),
             promotes=["*"],
         )
-        self.add_subsystem("update_mzfw_and_mlw", UpdateMLWandMZFW(), promotes=["*"])
+        # self.add_subsystem("update_mzfw_and_mlw", UpdateMLWandMZFW(), promotes=["*"])
+        self.add_subsystem("battery_weight", ComputeBatteryWeight(), promotes=["*"])
+        self.add_subsystem("fuel_cell", ComputeFuelCellWeight(), promotes=["*"])
+        self.add_subsystem("balance_of_plant", ComputeBoPWeight(), promotes=["*"])
+        self.add_subsystem("inverter", ComputeInverterWeight(), promotes=["*"])
+        self.add_subsystem("h2_storage", ComputeH2StorageWeight(), promotes=["*"])
 
         # Solvers setup
         self.nonlinear_solver = om.NonlinearBlockGS()
@@ -101,24 +115,20 @@ class ComputeOperatingWeightEmpty(om.Group):
         self.add_subsystem("empennage_weight", ComputeTailWeight(), promotes=["*"])
         self.add_subsystem("flight_controls_weight", ComputeFlightControlsWeight(), promotes=["*"])
         self.add_subsystem("landing_gear_weight", ComputeLandingGearWeight(), promotes=["*"])
-        self.add_subsystem(
-            "engine_weight",
-            ComputeEngineWeight(propulsion_id=self.options["propulsion_id"]),
-            promotes=["*"],
-        )
-        self.add_subsystem(
-            "unusable_fuel",
-            ComputeUnusableFuelWeight(propulsion_id=self.options["propulsion_id"]),
-            promotes=["*"],
-        )
-        self.add_subsystem("fuel_lines_weight", ComputeFuelLinesWeight(), promotes=["*"])
-        self.add_subsystem(
-            "navigation_systems_weight", ComputeNavigationSystemsWeight(), promotes=["*"]
-        )
+        self.add_subsystem("power_electronics_weight", ComputePowerElecWeight(), promotes=["*"])
+        self.add_subsystem("cable_weight", ComputeCablesWeight(), promotes=["*"])
+        self.add_subsystem("propeller_weight", ComputePropellerWeight(), promotes=["*"])
+        self.add_subsystem("electric_engine_weight", ComputeEEngineWeight(propulsion_id=self.options["propulsion_id"]),
+                           promotes=["*"])
+        # self.add_subsystem(
+        #     "unusable_fuel",
+        #     ComputeUnusableFuelWeight(propulsion_id=self.options["propulsion_id"]),
+        #     promotes=["*"],
+        # )
+        # self.add_subsystem("fuel_lines_weight", ComputeFuelLinesWeight(), promotes=["*"])
+        self.add_subsystem("navigation_systems_weight", ComputeNavigationSystemsWeight(), promotes=["*"])
         self.add_subsystem("power_systems_weight", ComputePowerSystemsWeight(), promotes=["*"])
-        self.add_subsystem(
-            "life_support_systems_weight", ComputeLifeSupportSystemsWeight(), promotes=["*"]
-        )
+        self.add_subsystem("life_support_systems_weight", ComputeLifeSupportSystemsWeight(), promotes=["*"])
         self.add_subsystem("passenger_seats_weight", ComputePassengerSeatsWeight(), promotes=["*"])
 
         # Make additions
@@ -141,15 +151,23 @@ class ComputeOperatingWeightEmpty(om.Group):
             "airframe_weight_sum", airframe_sum, promotes=["*"],
         )
 
-        propulsion_sum = om.AddSubtractComp()
-        propulsion_sum.add_equation(
-            "data:weight:propulsion:mass",
-            ["data:weight:propulsion:engine:mass", "data:weight:propulsion:fuel_lines:mass",],
+        hybrid_powertrain_sum = om.AddSubtractComp()
+        hybrid_powertrain_sum.add_equation(
+            "data:weight:hybrid_powertrain:mass",
+            [
+                "data:weight:propulsion:engine:mass",
+                "data:weight:hybrid_powertrain:fuel_cell:mass",
+                "data:weight:hybrid_powertrain:battery:mass",
+                "data:weight:hybrid_powertrain:bop:mass",
+                "data:weight:hybrid_powertrain:inverter:mass",
+                "data:weight:hybrid_powertrain:battery:mass",
+                "data:weight:hybrid_powertrain:h2_storage:mass",
+            ],
             units="kg",
             desc="Mass of the propulsion system",
         )
         self.add_subsystem(
-            "propulsion_weight_sum", propulsion_sum, promotes=["*"],
+            "hybrid_powertrain_weight_sum", hybrid_powertrain_sum, promotes=["*"],
         )
 
         systems_sum = om.AddSubtractComp()

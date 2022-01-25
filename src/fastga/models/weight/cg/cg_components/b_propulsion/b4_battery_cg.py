@@ -44,12 +44,15 @@ class ComputeBatteryCG(ExplicitComponent):
     def compute(self, inputs, outputs, discrete_inputs=None, discrete_outputs=None):
         nb_packs = inputs['data:geometry:hybrid_powertrain:battery:nb_packs']
         fus_length = inputs["data:geometry:fuselage:length"]
+        pilot_seat_length = inputs["data:geometry:cabin:seats:pilot:length"]
         fus_front_length = inputs["data:geometry:fuselage:front_length"]
         cabin_length = inputs["data:geometry:cabin:length"]
 
-        if nb_packs == 2:
+        if nb_packs == 1:
             cg_bat_1 = 0.1 * fus_length  # First battery assumed to be placed at 10% of the fuselage length
             cg_bat_2 = fus_front_length + 0.9 * cabin_length  # Second battery assumed to be placed at 90% of the cabin
             cg_b4 = (cg_bat_1 + cg_bat_2) / 2  # Mass is considered to be concentrated at the middle of the two locations.
+        else:
+            cg_b4 = fus_length + pilot_seat_length
 
         outputs["data:weight:propulsion:battery:CG:x"] = cg_b4

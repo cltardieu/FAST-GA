@@ -323,11 +323,21 @@ class BasicHEEngine(AbstractHybridPropulsion):
 
         pe_power = mech_power + power_losses  # Power received by power electronics
 
+        # Power is fully supplied by battery in descent phase
         battery_power = np.where(
-            engine_setting == EngineSetting.IDLE,
+            pe_power/self.eta_pe < self.fc_des_power,
             pe_power/self.eta_pe,
             pe_power/self.eta_pe - self.fc_des_power
         )
+
+        # battery_power = np.zeros(len(pe_power))
+        # # Battery is designed to provided additional power when fuel cell system doesn't supply enough power and to
+        # # supply full power in descent phase
+        # for i in range(len(pe_power)):
+        #     if pe_power/self.eta_pe[i] < self.fc_des_power or engine_setting[i] == EngineSetting.IDLE:
+        #         battery_power[i] = pe_power/self.eta_pe - self.fc_des_power
+        #     else:
+        #         battery_power[i] = pe_power / self.eta_pe
 
         return battery_power, sfc_thrust, out_thrust_rate, out_thrust
 
@@ -501,7 +511,7 @@ class BasicHEEngine(AbstractHybridPropulsion):
             real_power = (
                     thrust * atmosphere.true_airspeed / self.propeller_efficiency(thrust, atmosphere)
             )
-            if engine_setting == EngineSetting.IDLE:
+            if real_power < self.fc_des_power:
                 sfc = 0
             else:
                 sfc = self.H2_mass_flow / real_power  # [kg/s/W]
@@ -516,7 +526,7 @@ class BasicHEEngine(AbstractHybridPropulsion):
                         * atmosphere.true_airspeed[idx]
                         / self.propeller_efficiency(thrust[idx], local_atmosphere)
                 )
-                if engine_setting[idx] == EngineSetting.IDLE:
+                if real_power[idx] < self.fc_des_power:
                     sfc[idx] = 0
                 else:
                     sfc[idx] = self.H2_mass_flow / real_power[idx]  # [kg/s/W]
@@ -596,7 +606,7 @@ class BasicHEEngine(AbstractHybridPropulsion):
         M_cables = 2 * 2.20462 * self.cables_lsw * self.cabin_length / 1000  # Mass multiplied by 2 for redundancy
 
         # Motor mass
-        M_motor = self.compute_elec_motor()[2]
+        M_motor = self.compute_elec_motor(T_nom=self.nominal_torque)[2]
 
         # Propeller mass
         M_prop = self.prop_red_factor * 31.92 * self.nb_propellers * (self.nb_blades ** 0.391) * (

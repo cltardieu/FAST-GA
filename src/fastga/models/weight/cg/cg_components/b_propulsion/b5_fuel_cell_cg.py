@@ -20,27 +20,26 @@ from openmdao.core.explicitcomponent import ExplicitComponent
 class ComputeBatteryCG(ExplicitComponent):
     """
     Center of gravity estimation of the fuel cells considering a maximum of two stacks.
+    Assuming that if there are 2 stacks, they are placed next to each other (on an axis perpendicular to the fuselage).
+    Therefore CG.x doesn't depend on the number of stacks (still an input in case it's modified).
     """
 
     def setup(self):
-        self.add_input("data:geometry:hybrid_powertrain:fuel_cell:number_stacks", val=np.nan, units=None)
+        # self.add_input("data:geometry:hybrid_powertrain:fuel_cell:number_stacks", val=np.nan, units=None)
         self.add_input("data:geometry:fuselage:length", val=np.nan, units="m")
-        self.add_input("data:geometry:fuselage:front_length", val=np.nan, units="m")
-        self.add_input("data:geometry:cabin:length", val=np.nan, units="m")
+        # self.add_input("data:geometry:fuselage:front_length", val=np.nan, units="m")
+        # self.add_input("data:geometry:cabin:length", val=np.nan, units="m")
 
         self.add_output("data:weight:hybrid_powertrain:battery:CG:x", units="m")
 
         self.declare_partials("*", "*", method="fd")
 
     def compute(self, inputs, outputs, discrete_inputs=None, discrete_outputs=None):
-        nb_packs = inputs['data:geometry:hybrid_powertrain:battery:nb_packs']
+        # nb_stacks = inputs['data:geometry:hybrid_powertrain:fuel_cell:number_stacks']
         fus_length = inputs["data:geometry:fuselage:length"]
-        fus_front_length = inputs["data:geometry:fuselage:front_length"]
-        cabin_length = inputs["data:geometry:cabin:length"]
+        # fus_front_length = inputs["data:geometry:fuselage:front_length"]
+        # cabin_length = inputs["data:geometry:cabin:length"]
 
-        if nb_packs == 2:
-            cg_bat_1 = 0.1 * fus_length  # First battery assumed to be placed at 10% of the fuselage length
-            cg_bat_2 = fus_front_length + 0.9 * cabin_length  # Second battery assumed to be placed at 90% of the cabin
-            cg_b4 = (cg_bat_1 + cg_bat_2) / 2  # Mass is considered to be concentrated at the middle of the two locations.
+        cg_b5 = 0.1 * fus_length
 
-        outputs["data:weight:propulsion:battery:CG:x"] = cg_b4
+        outputs["data:weight:propulsion:battery:CG:x"] = cg_b5

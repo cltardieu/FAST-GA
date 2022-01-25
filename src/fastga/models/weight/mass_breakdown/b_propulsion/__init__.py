@@ -16,7 +16,6 @@ from .b1_ICengine_weight import ComputeEngineWeight
 from .b2_fuel_lines_weight import ComputeFuelLinesWeight
 from .b3_unusable_fuel_weight import ComputeUnusableFuelWeight
 from .b4_Eengine_weight import ComputeEEngineWeight
-from .b4_2_hydrogen_weight import ComputeHydrogenWeight
 from .b5_cables_weight import ComputeCablesWeight
 from .b6_power_electronics_weight import ComputePowerElecWeight
 from .b7_propeller_weight import ComputePropellerWeight
