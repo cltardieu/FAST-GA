@@ -77,11 +77,11 @@ class MassBreakdown(om.Group):
             promotes=["*"],
         )
         # self.add_subsystem("update_mzfw_and_mlw", UpdateMLWandMZFW(), promotes=["*"])
-        self.add_subsystem("battery_weight", ComputeBatteryWeight(), promotes=["*"])
-        self.add_subsystem("fuel_cell", ComputeFuelCellWeight(), promotes=["*"])
-        self.add_subsystem("balance_of_plant", ComputeBoPWeight(), promotes=["*"])
-        self.add_subsystem("inverter", ComputeInverterWeight(), promotes=["*"])
-        self.add_subsystem("h2_storage", ComputeH2StorageWeight(), promotes=["*"])
+        # self.add_subsystem("battery_weight", ComputeBatteryWeight(), promotes=["*"])
+        # self.add_subsystem("fuel_cell", ComputeFuelCellWeight(), promotes=["*"])
+        # self.add_subsystem("balance_of_plant", ComputeBoPWeight(), promotes=["*"])
+        # self.add_subsystem("inverter", ComputeInverterWeight(), promotes=["*"])
+        # self.add_subsystem("h2_storage", ComputeH2StorageWeight(), promotes=["*"])
 
         # Solvers setup
         self.nonlinear_solver = om.NonlinearBlockGS()
@@ -151,9 +151,22 @@ class ComputeOperatingWeightEmpty(om.Group):
             "airframe_weight_sum", airframe_sum, promotes=["*"],
         )
 
+        # propulsion_sum = om.AddSubtractComp()
+        # propulsion_sum.add_equation(
+        #     "data:weight:propulsion:mass",
+        #     [
+        #         "data:weight:propulsion:engine:mass",
+        #     ],
+        #     units="kg",
+        #     desc="Mass of the propulsion system",
+        # )
+        # self.add_subsystem(
+        #     "propulsion_weight_sum", propulsion_sum, promotes=["*"],
+        # )
+
         hybrid_powertrain_sum = om.AddSubtractComp()
         hybrid_powertrain_sum.add_equation(
-            "data:weight:hybrid_powertrain:mass",
+            "data:weight:propulsion:mass",
             [
                 "data:weight:propulsion:engine:mass",
                 "data:weight:hybrid_powertrain:fuel_cell:mass",
@@ -164,7 +177,7 @@ class ComputeOperatingWeightEmpty(om.Group):
                 "data:weight:hybrid_powertrain:h2_storage:mass",
             ],
             units="kg",
-            desc="Mass of the propulsion system",
+            desc="Mass of the hybrid propulsion system",
         )
         self.add_subsystem(
             "hybrid_powertrain_weight_sum", hybrid_powertrain_sum, promotes=["*"],

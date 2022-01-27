@@ -17,7 +17,7 @@ import numpy as np
 from openmdao.core.explicitcomponent import ExplicitComponent
 
 
-class ComputeBatteryCG(ExplicitComponent):
+class ComputeH2StorageCG(ExplicitComponent):
     """
     Center of gravity estimation of the hydrogen tanks considering a maximum of 2.
     Assuming hydrogen is stored behind the pilot seat, in height in case there are more than 1 (meaning CG.x for several
@@ -25,22 +25,18 @@ class ComputeBatteryCG(ExplicitComponent):
     """
 
     def setup(self):
-        # self.add_input("data:geometry:hybrid_powertrain:h2_storage:nb_tanks", val=np.nan, units=None)
-        self.add_input("data:geometry:cabin:seats:pilot:length", val=np.nan, units="m")
-        self.add_input("data:geometry:fuselage:length", val=np.nan, units="m")
         self.add_input("data:geometry:fuselage:front_length", val=np.nan, units="m")
         self.add_input("data:geometry:cabin:length", val=np.nan, units="m")
 
-        self.add_output("data:weight:hybrid_powertrain:battery:CG:x", units="m")
+        self.add_output("data:weight:hybrid_powertrain:h2_storage:CG:x", units="m")
 
         self.declare_partials("*", "*", method="fd")
 
     def compute(self, inputs, outputs, discrete_inputs=None, discrete_outputs=None):
-        nb_packs = inputs['data:geometry:hybrid_powertrain:battery:nb_packs']
-        fus_length = inputs["data:geometry:fuselage:length"]
         fus_front_length = inputs["data:geometry:fuselage:front_length"]
         cabin_length = inputs["data:geometry:cabin:length"]
 
+        # H2 tanks assumed to be placed just behind the pilot seat (stacked in height if more than 1)
+        b6 = fus_front_length + 0.9 * cabin_length  # 90% of the cabin length
 
-
-        outputs["data:weight:propulsion:battery:CG:x"]
+        outputs["data:weight:hybrid_powertrain:h2_storage:CG:x"] = b6

@@ -325,19 +325,10 @@ class BasicHEEngine(AbstractHybridPropulsion):
 
         # Power is fully supplied by battery in descent phase
         battery_power = np.where(
-            pe_power/self.eta_pe < self.fc_des_power,
+            engine_setting == EngineSetting.IDLE,
             pe_power/self.eta_pe,
             pe_power/self.eta_pe - self.fc_des_power
         )
-
-        # battery_power = np.zeros(len(pe_power))
-        # # Battery is designed to provided additional power when fuel cell system doesn't supply enough power and to
-        # # supply full power in descent phase
-        # for i in range(len(pe_power)):
-        #     if pe_power/self.eta_pe[i] < self.fc_des_power or engine_setting[i] == EngineSetting.IDLE:
-        #         battery_power[i] = pe_power/self.eta_pe - self.fc_des_power
-        #     else:
-        #         battery_power[i] = pe_power / self.eta_pe
 
         return battery_power, sfc_thrust, out_thrust_rate, out_thrust
 

@@ -17,7 +17,7 @@ import numpy as np
 from openmdao.core.explicitcomponent import ExplicitComponent
 
 
-class ComputeBatteryCG(ExplicitComponent):
+class ComputeFuelCellCG(ExplicitComponent):
     """
     Center of gravity estimation of the fuel cells considering a maximum of two stacks.
     Assuming that if there are 2 stacks, they are placed next to each other (on an axis perpendicular to the fuselage).
@@ -25,21 +25,16 @@ class ComputeBatteryCG(ExplicitComponent):
     """
 
     def setup(self):
-        # self.add_input("data:geometry:hybrid_powertrain:fuel_cell:number_stacks", val=np.nan, units=None)
         self.add_input("data:geometry:fuselage:length", val=np.nan, units="m")
-        # self.add_input("data:geometry:fuselage:front_length", val=np.nan, units="m")
-        # self.add_input("data:geometry:cabin:length", val=np.nan, units="m")
 
-        self.add_output("data:weight:hybrid_powertrain:battery:CG:x", units="m")
+        self.add_output("data:weight:hybrid_powertrain:fuel_cell:CG:x", units="m")
 
         self.declare_partials("*", "*", method="fd")
 
     def compute(self, inputs, outputs, discrete_inputs=None, discrete_outputs=None):
-        # nb_stacks = inputs['data:geometry:hybrid_powertrain:fuel_cell:number_stacks']
         fus_length = inputs["data:geometry:fuselage:length"]
-        # fus_front_length = inputs["data:geometry:fuselage:front_length"]
-        # cabin_length = inputs["data:geometry:cabin:length"]
 
+        # Fuel cell stack(s) assumed to be placed at 10% of the fuselage length, in parallel if more than 1 stack
         cg_b5 = 0.1 * fus_length
 
-        outputs["data:weight:propulsion:battery:CG:x"] = cg_b5
+        outputs["data:weight:hybrid_powertrain:fuel_cell:CG:x"] = cg_b5

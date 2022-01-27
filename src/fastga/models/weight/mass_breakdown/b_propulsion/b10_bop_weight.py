@@ -46,23 +46,23 @@ class ComputeBoPWeight(ExplicitComponent):
 
         stack_mass = inputs['data:weight:hybrid_powertrain:fuel_cell:mass']
 
-        """ Compressor """
+        # Compressor
         M_compressor = M_ref * (R / R_ref) ** 3
 
         outputs['data:weight:hybrid_powertrain:compressor:mass'] = M_compressor
 
-        """ HEX """
+        # HEX
         M_hex = radiator_area * 10000 * radiator_surface_density
 
         outputs['data:weight:hybrid_powertrain:hex:radiator_mass'] = M_hex
 
-        """ FC liquid cooling subsystem : based on https://www.researchgate.net/publication/319935703 """
+        # FC liquid cooling subsystem : based on https://www.researchgate.net/publication/319935703
         LC_SUBSYSTEM_MASS_FRACTION = 0.17
         M_fc_overhead = LC_SUBSYSTEM_MASS_FRACTION * stack_mass
 
         outputs['data:weight:hybrid_powertrain:bop:lc_ss_mass'] = M_fc_overhead
 
-        """ Total mass of the BoP """
+        # Total mass of the BoP
         b10 = M_compressor + M_hex + M_fc_overhead
 
         outputs['data:weight:hybrid_powertrain:bop:total_mass'] = b10

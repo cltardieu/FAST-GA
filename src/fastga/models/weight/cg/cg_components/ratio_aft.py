@@ -44,6 +44,9 @@ class ComputeCG(om.ExplicitComponent):
                 "data:weight:systems:life_support:air_conditioning:CG:x",
                 "data:weight:systems:navigation:CG:x",
                 "data:weight:furniture:passenger_seats:CG:x",
+                "data:weight:hybrid_powertrain:battery:CG:x",
+                "data:weight:hybrid_powertrain:fuel_cell:CG:x",
+                "data:weight:hybrid_powertrain:h2_storage:CG:x",
             ],
         )
 
@@ -64,6 +67,9 @@ class ComputeCG(om.ExplicitComponent):
                 "data:weight:systems:life_support:air_conditioning:mass",
                 "data:weight:systems:navigation:mass",
                 "data:weight:furniture:passenger_seats:mass",
+                "data:weight:hybrid_powertrain:battery:mass",
+                "data:weight:hybrid_powertrain:fuel_cell:mass",
+                "data:weight:hybrid_powertrain:h2_storage:mass",
             ],
         )
 

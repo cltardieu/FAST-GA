@@ -104,10 +104,12 @@ class BaseOMPropulsionComponent(om.ExplicitComponent, ABC):
             thrust_rate=inputs["data:propulsion:required_thrust_rate"],
             thrust=inputs["data:propulsion:required_thrust"],
         )
+        flight_point.add_field("battery_power", annotation_type=float)
         wrapper.compute_flight_points(flight_point)
         outputs["data:propulsion:SFC"] = flight_point.sfc
         outputs["data:propulsion:thrust_rate"] = flight_point.thrust_rate
         outputs["data:propulsion:thrust"] = flight_point.thrust
+        outputs["data:propulsion:battery_power"] = flight_point.battery_power
 
     @staticmethod
     @abstractmethod

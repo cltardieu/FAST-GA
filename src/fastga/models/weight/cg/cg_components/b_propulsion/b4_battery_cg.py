@@ -21,7 +21,7 @@ class ComputeBatteryCG(ExplicitComponent):
     """
     Center of gravity estimation of the battery considering a maximum of 2 battery packs.
 
-    If there is only 1 pack : assuming an engine configuration with the battery pack behind the pilot seat.
+    If there is only 1 pack : assuming an engine configuration with the battery pack behind the pilot seat and H2 tanks.
     Based on : 'Boeing Fuel Cell Demonstrator' - https://arc.aiaa.org/doi/10.2514/1.42234
 
     If there are 2 : assuming an engine configuration with both batteries at the front of the aircraft (just behind the
@@ -32,7 +32,6 @@ class ComputeBatteryCG(ExplicitComponent):
 
     def setup(self):
         self.add_input("data:geometry:hybrid_powertrain:battery:nb_packs", val=np.nan, units=None)
-        self.add_input("data:geometry:cabin:seats:pilot:length", val=np.nan, units="m")
         self.add_input("data:geometry:fuselage:length", val=np.nan, units="m")
         self.add_input("data:geometry:fuselage:front_length", val=np.nan, units="m")
         self.add_input("data:geometry:cabin:length", val=np.nan, units="m")
@@ -44,15 +43,14 @@ class ComputeBatteryCG(ExplicitComponent):
     def compute(self, inputs, outputs, discrete_inputs=None, discrete_outputs=None):
         nb_packs = inputs['data:geometry:hybrid_powertrain:battery:nb_packs']
         fus_length = inputs["data:geometry:fuselage:length"]
-        pilot_seat_length = inputs["data:geometry:cabin:seats:pilot:length"]
         fus_front_length = inputs["data:geometry:fuselage:front_length"]
         cabin_length = inputs["data:geometry:cabin:length"]
 
-        if nb_packs == 1:
-            cg_bat_1 = 0.1 * fus_length  # First battery assumed to be placed at 10% of the fuselage length
-            cg_bat_2 = fus_front_length + 0.9 * cabin_length  # Second battery assumed to be placed at 90% of the cabin
-            cg_b4 = (cg_bat_1 + cg_bat_2) / 2  # Mass is considered to be concentrated at the middle of the two locations.
-        else:
-            cg_b4 = fus_length + pilot_seat_length
+        if nb_packs == 1:  # Single battery placed behind the pilot seat and the hydrogen tanks : 95% of the cabin
+            cg_b4 = fus_front_length + 0.95 * cabin_length
+        else:  # Both batteries placed one after the other at the front of the aircraft behind fuel cell stacks
+            cg_batt_1 = 0.15 * fus_length  # 15% of the fuselage
+            cg_batt_2 = 0.2 * fus_length  # 20% of the fuselage
+            cg_b4 = (cg_batt_1 + cg_batt_2) / 2
 
-        outputs["data:weight:propulsion:battery:CG:x"] = cg_b4
+        outputs["data:weight:hybrid_powertrain:battery:CG:x"] = cg_b4

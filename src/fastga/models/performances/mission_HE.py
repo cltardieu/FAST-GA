@@ -1173,10 +1173,10 @@ class _compute_descent(DynamicEquilibrium):
             )
 
         outputs["data:mission:sizing:main_route:descent:hydrogen"] = mass_hydrogen_t
-        outputs["data:mission:sizing:main_route:descent:power"] = power_descent
+        outputs["data:mission:sizing:main_route:descent:battery_power"] = power_descent
         outputs["data:mission:sizing:main_route:descent:current"] = current_descent
-        outputs["data:mission:sizing:main_route:descent:bat_capacity"] = bat_capacity_descent
-        outputs["data:mission:sizing:main_route:descent:energy"] = bat_energy_descent
+        outputs["data:mission:sizing:main_route:descent:battery_capacity"] = bat_capacity_descent
+        outputs["data:mission:sizing:main_route:descent:battery_energy"] = bat_energy_descent
         outputs["data:mission:sizing:main_route:descent:power_array"] = descent_power
         outputs["data:mission:sizing:main_route:descent:time_array"] = descent_time
         outputs["data:mission:sizing:main_route:descent:capacity_array"] = descent_capacity
