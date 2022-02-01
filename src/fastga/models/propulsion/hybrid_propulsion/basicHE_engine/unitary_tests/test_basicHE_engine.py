@@ -843,7 +843,7 @@ def test_compute_flight_points():
         mach=0.0, altitude=0.0, engine_setting=EngineSetting.TAKEOFF, thrust_rate=0.8
     )  # with engine_setting as EngineSetting
     engine.compute_flight_points(flight_point)
-    np.testing.assert_allclose(flight_point.thrust, 1596.989, rtol=1e-2)
+    np.testing.assert_allclose(flight_point.thrust, 1621.4118, rtol=1e-2)
     np.testing.assert_allclose(flight_point.sfc, 0., rtol=1e-3)
     np.testing.assert_allclose(flight_point.battery_power, 23278, rtol=1000)
 
@@ -867,13 +867,13 @@ def test_compute_flight_points():
         EngineSetting.IDLE,
         EngineSetting.CRUISE,
     ]  # mix EngineSetting with integers
-    expected_sfc = [0., 0.000613, 0.000613, 0.001001, 0.000567, 0.,0.001086, 0.001086, 0.002491, 0.001538]
-    expected_bpower = [6.992544e+01, 5.173973e+04, 5.173973e+04, 3.930955e+04, 7.968401e+04, 6.992544e+01, 2.327849e+04,
-                       2.327849e+04, 8.756326e+03, 2.052965e+04]
+    expected_sfc = [0., 0.000613, 0.000613, 0.001001, 0.000567, 0.000258, 0.001086, 0.001086, 0.002491, 0.001538]
+    expected_bpower = [476.479086, 51739.729707, 51739.729707, 59309.554571, 79684.010533, 10286.190895, 23278.490324,
+                         23278.490324, 28756.325811, 20529.653904]
     # Added expected thrust rates and thrusts to pass tests but need to fix the match between thrust and thrust rates
     expected_thrust_rates = [0.8, 0.5, 0.5, 0.4, 0.7, 1., 0.282052, 0.282052, 0.160674, 0.257987]
-    expected_thrusts = [1596.989816,  851.94321,  851.94321,  521.607381,  920.689701,
-                        1996.23727,  480.585081,  480.585081,  209.521302,  339.323154]
+    expected_thrusts = [1621.4118  ,  851.94321 ,  851.94321 ,  521.607381,  920.689701, 2026.76475,
+                        480.585081,  480.585081,  209.521302,  339.323154]
 
     flight_points = FlightPoint(
         mach=machs + machs,

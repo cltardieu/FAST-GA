@@ -121,7 +121,6 @@ class _compute_reserve(om.ExplicitComponent):
         self.add_input("data:mission:sizing:main_route:cruise:duration", np.nan, units="s")
         self.add_input("data:mission:sizing:main_route:reserve:duration", np.nan, units="s")
 
-        # self.add_input("data:mission:sizing:main_route:cruise:battery_energy", np.nan, units="kW*h")
         self.add_input("data:mission:sizing:main_route:reserve:battery_max_power", np.nan, units="kW")
         self.add_input("settings:electrical_system:system_voltage", np.nan, units="V")
 
@@ -449,9 +448,6 @@ class _compute_taxi(om.ExplicitComponent):
 
         if self.options["taxi_out"]:
             _LOGGER.info("Entering mission computation")
-
-        # The electrical system voltage is used to compute the current
-        system_voltage = inputs["settings:electrical_system:system_voltage"]
 
         propulsion_model = HybridEngineSet(
             self._engine_wrapper.get_model(inputs), inputs["data:geometry:propulsion:count"]
@@ -947,10 +943,11 @@ class _compute_cruise(DynamicEquilibrium):
 
 class _compute_descent(DynamicEquilibrium):
     """
-    Compute the fuel consumption and the battery energy on descent segment with constant VCAS and descent
+    Compute the hydrogen consumption and the battery energy on descent segment with constant VCAS and descent
     rate.
     The hypothesis of small alpha angle is done.
     Warning: Descent rate is reduced if cd/cl < abs(desc_rate)!
+    Battery system is deactivated during descent and we assume we acn rely solely on fuel cell power.
     """
 
     def __init__(self, **kwargs):
@@ -1018,7 +1015,7 @@ class _compute_descent(DynamicEquilibrium):
         m_ic = inputs["data:mission:sizing:initial_climb:hydrogen"]
         m_cl = inputs["data:mission:sizing:main_route:climb:hydrogen"]
         m_cr = inputs["data:mission:sizing:main_route:cruise:hydrogen"]
-        system_voltage = inputs["settings:electrical_system:system_voltage"]
+        # system_voltage = inputs["settings:electrical_system:system_voltage"]
 
         # Define initial conditions
         t_start = time.time()
@@ -1029,14 +1026,14 @@ class _compute_descent(DynamicEquilibrium):
         mass_t = mtow - (m_to + m_tk + m_ic + m_cl + m_cr)
         previous_step = ()
 
-        descent_power = [0]
-        descent_time = [0]
-        descent_capacity = [0]
-        power_descent = 0.0
-        descent_current = [0]
-        current_descent = 0.0
-        bat_capacity_descent = 0.0
-        bat_energy_descent = 0.0
+        # descent_power = [0]
+        # descent_time = [0]
+        # descent_capacity = [0]
+        # power_descent = 0.0
+        # descent_current = [0]
+        # current_descent = 0.0
+        # bat_capacity_descent = 0.0
+        # bat_energy_descent = 0.0
         # atm_0 = Atmosphere(0.0)
         # warning = False
 
@@ -1123,19 +1120,19 @@ class _compute_descent(DynamicEquilibrium):
             time_t += time_step
 
             # Estimate battery energy consumption, capacity, current and update descent duration
-            descent_power.append(flight_point.battery_power)
-            power_descent = max(descent_power)
-
-            descent_current.append(flight_point.battery_power / system_voltage)
-            current_descent = max(descent_current)
-            bat_capacity_descent += (flight_point.battery_power / system_voltage) * time_step / 3600
-            descent_capacity.append((flight_point.battery_power / system_voltage) * time_step / 3600)
-
-            # Time step is divided by 3600 to compute the capacity in A*h
-            bat_energy_descent += propulsion_model.get_consumed_energy(flight_point, time_step / 3600)
-            # Time step is divided by 3600 to compute the energy in kWh
-            # time_t += time_step
-            descent_time.append(time_t / 3600)
+            # descent_power.append(flight_point.battery_power)
+            # power_descent = max(descent_power)
+            #
+            # descent_current.append(flight_point.battery_power / system_voltage)
+            # current_descent = max(descent_current)
+            # bat_capacity_descent += (flight_point.battery_power / system_voltage) * time_step / 3600
+            # descent_capacity.append((flight_point.battery_power / system_voltage) * time_step / 3600)
+            #
+            # # Time step is divided by 3600 to compute the capacity in A*h
+            # bat_energy_descent += propulsion_model.get_consumed_energy(flight_point, time_step / 3600)
+            # # Time step is divided by 3600 to compute the energy in kWh
+            # # time_t += time_step
+            # descent_time.append(time_t / 3600)
 
             # Check calculation duration
             if (time.time() - t_start) > MAX_CALCULATION_TIME:
@@ -1146,10 +1143,10 @@ class _compute_descent(DynamicEquilibrium):
                 )
 
         # Add additional zeros in the power array to meet the plot requirements during post-processing
-        while len(descent_power) < POINTS_POWER_COUNT:
-            descent_power.append(0)
-            descent_time.append(0)
-            descent_capacity.append(0)
+        # while len(descent_power) < POINTS_POWER_COUNT:
+        #     descent_power.append(0)
+        #     descent_time.append(0)
+        #     descent_capacity.append(0)
 
         # Save results
         if self.options["out_file"] != "":
@@ -1173,12 +1170,12 @@ class _compute_descent(DynamicEquilibrium):
             )
 
         outputs["data:mission:sizing:main_route:descent:hydrogen"] = mass_hydrogen_t
-        outputs["data:mission:sizing:main_route:descent:battery_power"] = power_descent
-        outputs["data:mission:sizing:main_route:descent:current"] = current_descent
-        outputs["data:mission:sizing:main_route:descent:battery_capacity"] = bat_capacity_descent
-        outputs["data:mission:sizing:main_route:descent:battery_energy"] = bat_energy_descent
-        outputs["data:mission:sizing:main_route:descent:power_array"] = descent_power
-        outputs["data:mission:sizing:main_route:descent:time_array"] = descent_time
-        outputs["data:mission:sizing:main_route:descent:capacity_array"] = descent_capacity
+        # outputs["data:mission:sizing:main_route:descent:battery_power"] = power_descent
+        # outputs["data:mission:sizing:main_route:descent:current"] = current_descent
+        # outputs["data:mission:sizing:main_route:descent:battery_capacity"] = bat_capacity_descent
+        # outputs["data:mission:sizing:main_route:descent:battery_energy"] = bat_energy_descent
+        # outputs["data:mission:sizing:main_route:descent:power_array"] = descent_power
+        # outputs["data:mission:sizing:main_route:descent:time_array"] = descent_time
+        # outputs["data:mission:sizing:main_route:descent:capacity_array"] = descent_capacity
         outputs["data:mission:sizing:main_route:descent:distance"] = distance_t
         outputs["data:mission:sizing:main_route:descent:duration"] = time_t

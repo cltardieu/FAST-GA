@@ -274,7 +274,7 @@ class BasicHEEngine(AbstractHybridPropulsion):
 
         # Get maximum thrust @ given altitude & mach
         atmosphere = Atmosphere(np.asarray(altitude), altitude_in_feet=False)
-        mach = np.asarray(mach) + (np.asarray(mach) == 0) * 1e-12
+        mach = np.asarray(mach) + (np.asarray(mach) == 0) * 1e-2
         atmosphere.mach = mach
         max_thrust = self.max_thrust(atmosphere)
 
