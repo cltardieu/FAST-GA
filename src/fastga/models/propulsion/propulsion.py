@@ -109,7 +109,6 @@ class BaseOMPropulsionComponent(om.ExplicitComponent, ABC):
         outputs["data:propulsion:SFC"] = flight_point.sfc
         outputs["data:propulsion:thrust_rate"] = flight_point.thrust_rate
         outputs["data:propulsion:thrust"] = flight_point.thrust
-        outputs["data:propulsion:battery_power"] = flight_point.battery_power
 
     @staticmethod
     @abstractmethod

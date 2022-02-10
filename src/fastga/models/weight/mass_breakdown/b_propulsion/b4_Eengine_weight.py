@@ -44,7 +44,7 @@ class ComputeEEngineWeight(ExplicitComponent):
         self.add_input("data:weight:hybrid_powertrain:cable:mass", val=np.nan, units="kg")
         self.add_input("data:weight:hybrid_powertrain:propeller:mass", val=np.nan, units="kg")
 
-        self.add_output("data:weight:propulsion:engine:mass", units="kg")
+        self.add_output("data:weight:hybrid_powertrain:engine:mass", units="kg")
 
         self.declare_partials("*", "*", method="fd")
 

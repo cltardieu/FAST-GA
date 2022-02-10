@@ -73,7 +73,7 @@ class BasicHEEngine(AbstractHybridPropulsion):
             H2_mass_flow,
             pe_specific_power,
             cables_lsw,
-            cabin_length,
+            cables_length,
             nb_blades,
             prop_diameter,
             nb_propellers,
@@ -122,7 +122,7 @@ class BasicHEEngine(AbstractHybridPropulsion):
         self.H2_mass_flow = H2_mass_flow
         self.pe_specific_power = pe_specific_power
         self.cables_lsw = cables_lsw
-        self.cabin_length = cabin_length
+        self.cables_length = cables_length
         self.nb_blades = nb_blades
         self.prop_diameter = prop_diameter
         self.nb_propellers = nb_propellers
@@ -317,8 +317,8 @@ class BasicHEEngine(AbstractHybridPropulsion):
 
         # Check torque is within limits
         if np.max(torque) > self.max_torque:
-            # raise Exception("Maximum motor torque value [{}Nm] exceeded!".format(self.max_torque))
-            pass
+            raise Exception("Maximum motor torque value [{}Nm] exceeded!".format(self.max_torque))
+            # pass
         power_losses = (alpha * torque ** 2) + (beta * self.motor_speed ** 1.5)
 
         pe_power = mech_power + power_losses  # Power received by power electronics
@@ -502,7 +502,8 @@ class BasicHEEngine(AbstractHybridPropulsion):
             real_power = (
                     thrust * atmosphere.true_airspeed / self.propeller_efficiency(thrust, atmosphere)
             )
-            if real_power < self.fc_des_power:
+            # if real_power < self.fc_des_power:
+            if engine_setting == EngineSetting.IDLE:
                 sfc = 0
             else:
                 sfc = self.H2_mass_flow / real_power  # [kg/s/W]
@@ -517,7 +518,8 @@ class BasicHEEngine(AbstractHybridPropulsion):
                         * atmosphere.true_airspeed[idx]
                         / self.propeller_efficiency(thrust[idx], local_atmosphere)
                 )
-                if real_power[idx] < self.fc_des_power:
+                # if real_power[idx] < self.fc_des_power:
+                if engine_setting[idx] == EngineSetting.IDLE:
                     sfc[idx] = 0
                 else:
                     sfc[idx] = self.H2_mass_flow / real_power[idx]  # [kg/s/W]
@@ -594,7 +596,7 @@ class BasicHEEngine(AbstractHybridPropulsion):
         M_pe = self.max_power / self.pe_specific_power
 
         # Cables mass - based on a model described in FAST-GA-ELEC
-        M_cables = 2 * 2.20462 * self.cables_lsw * self.cabin_length / 1000  # Mass multiplied by 2 for redundancy
+        M_cables = 2 * 2.20462 * self.cables_lsw * self.cables_length / 1000  # Mass multiplied by 2 for redundancy
 
         # Motor mass
         M_motor = self.compute_elec_motor(T_nom=self.nominal_torque)[2]

@@ -24,9 +24,9 @@ from fastga.models.weight.mass_breakdown.a_airframe import (
     ComputeLandingGearWeight,
 )
 from fastga.models.weight.mass_breakdown.b_propulsion import (
-    ComputeEngineWeight,
-    ComputeFuelLinesWeight,
-    ComputeUnusableFuelWeight,
+    # ComputeEngineWeight,
+    # ComputeFuelLinesWeight,
+    # ComputeUnusableFuelWeight,
     ComputeEEngineWeight,
     ComputeCablesWeight,
     ComputePowerElecWeight,
@@ -77,11 +77,6 @@ class MassBreakdown(om.Group):
             promotes=["*"],
         )
         # self.add_subsystem("update_mzfw_and_mlw", UpdateMLWandMZFW(), promotes=["*"])
-        # self.add_subsystem("battery_weight", ComputeBatteryWeight(), promotes=["*"])
-        # self.add_subsystem("fuel_cell", ComputeFuelCellWeight(), promotes=["*"])
-        # self.add_subsystem("balance_of_plant", ComputeBoPWeight(), promotes=["*"])
-        # self.add_subsystem("inverter", ComputeInverterWeight(), promotes=["*"])
-        # self.add_subsystem("h2_storage", ComputeH2StorageWeight(), promotes=["*"])
 
         # Solvers setup
         self.nonlinear_solver = om.NonlinearBlockGS()
@@ -120,6 +115,12 @@ class ComputeOperatingWeightEmpty(om.Group):
         self.add_subsystem("propeller_weight", ComputePropellerWeight(), promotes=["*"])
         self.add_subsystem("electric_engine_weight", ComputeEEngineWeight(propulsion_id=self.options["propulsion_id"]),
                            promotes=["*"])
+        self.add_subsystem("battery_weight", ComputeBatteryWeight(), promotes=["*"])
+        self.add_subsystem("fuel_cells_weight", ComputeFuelCellWeight(), promotes=["*"])
+        self.add_subsystem("balance_of_plant_weight", ComputeBoPWeight(), promotes=["*"])
+        self.add_subsystem("inverter_weight", ComputeInverterWeight(), promotes=["*"])
+        self.add_subsystem("h2_storage_weight", ComputeH2StorageWeight(), promotes=["*"])
+
         # self.add_subsystem(
         #     "unusable_fuel",
         #     ComputeUnusableFuelWeight(propulsion_id=self.options["propulsion_id"]),
@@ -171,7 +172,7 @@ class ComputeOperatingWeightEmpty(om.Group):
                 "data:weight:propulsion:engine:mass",
                 "data:weight:hybrid_powertrain:fuel_cell:mass",
                 "data:weight:hybrid_powertrain:battery:mass",
-                "data:weight:hybrid_powertrain:bop:mass",
+                "data:weight:hybrid_powertrain:bop:total_mass",
                 "data:weight:hybrid_powertrain:inverter:mass",
                 "data:weight:hybrid_powertrain:battery:mass",
                 "data:weight:hybrid_powertrain:h2_storage:mass",

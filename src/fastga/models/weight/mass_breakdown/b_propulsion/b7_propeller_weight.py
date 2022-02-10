@@ -32,7 +32,7 @@ class ComputePropellerWeight(ExplicitComponent):
         self.add_input("data:geometry:propulsion:count", val=np.nan, units=None)
         self.add_input("settings:weight:hybrid_powertrain:prop_reduction_factor", val=np.nan, units=None)
 
-        self.add_output("data:weight:propulsion:propeller:mass", units="lb")
+        self.add_output("data:weight:hybrid_powertrain:propeller:mass", units="lb")
 
     def compute(self, inputs, outputs, discrete_inputs=None, discrete_outputs=None):
 

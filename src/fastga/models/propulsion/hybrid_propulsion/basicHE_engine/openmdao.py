@@ -110,8 +110,8 @@ class OMBasicHEEngineWrapper(IOMPropulsionWrapper):
         component.add_input("data:propulsion:hybrid_powertrain:fuel_cell:design_power", np.nan, units='W')
         component.add_input("data:propulsion:hybrid_powertrain:fuel_cell:hyd_mass_flow", np.nan, units='kg/s')
         component.add_input("data:propulsion:hybrid_powertrain:power_electronics:pe_specific_power", np.nan, units='W/kg')
-        component.add_input("data:propulsion:hybrid_powertrain:cables:lsw", np.nan, units="kg/m")
-        component.add_input("data:geometry:cabin:length", np.nan, units="m")
+        component.add_input("data:propulsion:hybrid_powertrain:cable:lsw", np.nan, units="kg/m")
+        component.add_input("data:geometry:hybrid_powertrain:cables:length", np.nan, units="m")
         component.add_input("data:geometry:propeller:blades_number", np.nan, units=None)
         component.add_input("data:geometry:propeller:diameter", np.nan, units="m")
         component.add_input("data:geometry:propeller:prop_number", np.nan, units=None)
@@ -144,8 +144,8 @@ class OMBasicHEEngineWrapper(IOMPropulsionWrapper):
             "fc_des_power": inputs["data:propulsion:hybrid_powertrain:fuel_cell:design_power"],
             "H2_mass_flow": inputs["data:propulsion:hybrid_powertrain:fuel_cell:hyd_mass_flow"],
             "pe_specific_power": inputs["data:propulsion:hybrid_powertrain:power_electronics:pe_specific_power"],
-            "cables_lsw": inputs["data:propulsion:hybrid_powertrain:cables:lsw"],
-            "cabin_length": inputs["data:geometry:cabin:length"],
+            "cables_lsw": inputs["data:propulsion:hybrid_powertrain:cable:lsw"],
+            "cables_length": inputs["data:geometry:hybrid_powertrain:cables:length"],
             "nb_blades": inputs["data:geometry:propeller:blades_number"],
             "prop_diameter": inputs["data:geometry:propeller:diameter"],
             "nb_propellers": inputs["data:geometry:propeller:prop_number"],

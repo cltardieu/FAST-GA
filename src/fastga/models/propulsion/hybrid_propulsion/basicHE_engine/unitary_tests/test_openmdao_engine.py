@@ -815,19 +815,18 @@ def test_OMBasicHEEngineComponent():
     ]  # mix EngineSetting with integers
 
     expected_sfc = np.array([
-        [0., 0.000613, 0.000613, 0.001242, 0.0007],
-        [0., 0.001086, 0.001086, 0.003588, 0.002165]
+        [0.000322, 0.000613, 0.000613, 0., 0.0007],
+        [0.000258, 0.001086, 0.001086, 0., 0.002165]
     ])
-    expected_bpower = [6.992544e+01, 5.173973e+04, 5.173973e+04, 3.930955e+04, 7.968401e+04, 6.992544e+01, 2.327849e+04,
-                       2.327849e+04, 8.756326e+03, 2.052965e+04]
+
     # Added expected thrust rates and thrusts to pass tests but need to fix the match between thrust and thrust rates
     expected_thrust_rates = np.array([
         [0.8, 0.5, 0.5, 0.4, 0.7],
         [1., 0.282052, 0.282052, 0.138481, 0.226343]
     ])
     expected_thrusts = np.array([
-        [1596.989816, 851.94321, 851.94321, 420.198, 745.650044],
-        [1996.23727, 480.585081, 480.585081, 145.47342, 241.104151]
+        [1621.4118, 851.94321, 851.94321, 420.198, 745.650044],
+        [2026.76475 , 480.585081, 480.585081, 145.47342, 241.104151]
     ])
 
     ivc = om.IndepVarComp()
@@ -860,7 +859,7 @@ def test_OMBasicHEEngineComponent():
     ivc.add_output("data:propulsion:hybrid_powertrain:fuel_cell:design_power", 20000, units='W')
     ivc.add_output("data:propulsion:hybrid_powertrain:fuel_cell:hyd_mass_flow", 0.522, units='kg/s')
     ivc.add_output("data:propulsion:hybrid_powertrain:power_electronics:pe_specific_power", 2200, units='W/kg')
-    ivc.add_output("data:propulsion:hybrid_powertrain:cables:lsw", 0.2, units="kg/m")
+    ivc.add_output("data:propulsion:hybrid_powertrain:cable:lsw", 0.2, units="kg/m")
     ivc.add_output("data:geometry:cabin:length", 3.048, units="m")
     ivc.add_output("data:geometry:propeller:blades_number", 3, units=None)
     ivc.add_output("data:geometry:propeller:diameter", 1.98, units="m")
@@ -872,9 +871,6 @@ def test_OMBasicHEEngineComponent():
     np.testing.assert_allclose(
         problem["data:propulsion:SFC"], expected_sfc, rtol=1e-2
     )
-    # np.testing.assert_allclose(
-    #     problem["data:propulsion:battery_power"], expected_bpower, rtol=1e-2
-    # )
     np.testing.assert_allclose(
         problem["data:propulsion:thrust_rate"], expected_thrust_rates, rtol=1e-2
     )

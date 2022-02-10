@@ -1,3 +1,18 @@
+<!--
+  ~ This file is part of FAST : A framework for rapid Overall Aircraft Design
+  ~ Copyright (C) 2020  ONERA & ISAE-SUPAERO
+  ~ FAST is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  -->
+
 <FASTOAD_model>
   <data>
     <TLAR>
@@ -518,6 +533,7 @@
         </holding>
         <initial_climb>
           <fuel units="kg" is_input="False">0.08009891683094206<!--mass of consumed fuel during initial climb phase in sizing mission--></fuel>
+          <battery_energy units="kW*h" is_input="False">0.0286</battery_energy>
         </initial_climb>
         <landing>
           <elevator_angle units="deg" is_input="True">-25.0</elevator_angle>
@@ -535,18 +551,21 @@
           <flap_angle units="deg" is_input="True">10.0<!--flap angle during takeoff phase in sizing mission--></flap_angle>
           <friction_coefficient_no_brake is_input="True">0.03<!--ground friction coefficient with no brake in sizing mission--></friction_coefficient_no_brake>
           <fuel units="kg" is_input="False">0.4116003852232667<!--mass of consumed fuel during takeoff phase in sizing mission--></fuel>
+          <battery_energy units="kW*h" is_input="False">0.077</battery_energy>
           <ground_roll units="m" is_input="False">418.1633840007043</ground_roll>
           <thrust_rate is_input="True">1.0</thrust_rate>
         </takeoff>
         <taxi_in>
           <duration units="s" is_input="True">300.0<!--duration of taxi-in phase in sizing mission--></duration>
           <fuel units="kg" is_input="False">1.3691263819948132<!--mass of consumed fuel during taxi-in phase in sizing mission--></fuel>
+          <battery_energy units="kW*h" is_input="False">0</battery_energy>
           <speed units="knot" is_input="True">30.0<!--speed during taxi-in phase in sizing mission--></speed>
           <thrust_rate is_input="True">0.3<!--thrust rate (between 0.0 and 1.0) during taxi-in phase in sizing mission--></thrust_rate>
         </taxi_in>
         <taxi_out>
           <duration units="s" is_input="True">300.0<!--duration of taxi-out phase in sizing mission--></duration>
           <fuel units="kg" is_input="False">1.3691263819948132<!--mass of consumed fuel during taxi-out phase in sizing mission--></fuel>
+          <battery_energy units="kW*h" is_input="False">0</battery_energy>
           <speed units="knot" is_input="True">30.0<!--speed during taxi-out phase in sizing mission--></speed>
           <thrust_rate is_input="True">0.3<!--thrust rate (between 0.0 and 1.0) during taxi-out phase in sizing mission--></thrust_rate>
         </taxi_out>
@@ -555,6 +574,7 @@
             <distance units="m" is_input="False">24114.427039885122<!--covered ground distance during climb phase--></distance>
             <duration units="s" is_input="False">496.9804449004967<!--duration of climb phase in sizing mission--></duration>
             <fuel units="kg" is_input="False">7.833128232411083<!--mass of consumed fuel during climb phase in sizing mission--></fuel>
+            <battery_energy units="kW*h" is_input="False">2.6</battery_energy>
             <v_cas units="m/s" is_input="False">45.75448995358913</v_cas>
             <climb_rate>
               <cruise_level units="ft/min" is_input="True">750.0</cruise_level>
@@ -572,9 +592,12 @@
             <distance units="m" is_input="False">75202.4025503226<!--covered ground distance during descent phase--></distance>
             <duration units="s" is_input="False">1506.9542966085064<!--duration of descent phase in sizing mission--></duration>
             <fuel units="kg" is_input="False">5.99372114117938<!--mass of consumed fuel during descent phase in sizing mission--></fuel>
+            <battery_energy units="kW*h" is_input="False">0.66</battery_energy>
           </descent>
           <reserve>
             <fuel units="kg" is_input="False">26.9383443322907</fuel>
+            <battery_max_power units="kW" is_input="False">35</battery_max_power>
+            <duration units="min" is_input="True">20</duration>
           </reserve>
         </main_route>
       </sizing>
@@ -623,8 +646,8 @@
           <nominal_pressure units="Pa" is_input="True">10000</nominal_pressure>
           <operating_temperature units="K" is_input="True">340</operating_temperature>
           <cooling_power units="W" is_input="False">17490</cooling_power>
-          <ox_mass_flow units="kg/s" is_input="False">5.74</ox_mass_flow>
-          <hyd_mass_flow units="kg/s" is_input="False">0.522</hyd_mass_flow>
+          <ox_mass_flow units="kg/s" is_input="False">0.00287</ox_mass_flow>
+          <hyd_mass_flow units="kg/s" is_input="False">0.000359</hyd_mass_flow>
         </fuel_cell>
         <h2_storage>
           <pressure units="Pa" is_input="True">3500000</pressure>
@@ -655,12 +678,12 @@
     </propulsion>
     <weight>
       <aircraft>
-        <MFW units="kg" is_input="False">296.5610797282422<!--maximum fuel weight--></MFW>
-        <MLW units="kg" is_input="False">1613.6635017830172<!--maximum landing weight--></MLW>
-        <MTOW units="kg" is_input="False">1613.6108930412126<!--maximum takeoff weight--></MTOW>
-        <MZFW units="kg" is_input="False">1426.3525345316934<!--maximum zero fuel weight--></MZFW>
-        <OWE units="kg" is_input="False">1006.3525345316933<!--Mass of aircraft--></OWE>
-        <ZFW units="kg" is_input="False">1361.3525345316934</ZFW>
+        <MFW units="kg" is_input="False">5<!--maximum fuel weight--></MFW>
+        <MLW units="kg" is_input="False">860<!--maximum landing weight--></MLW>
+        <MTOW units="kg" is_input="False">860<!--maximum takeoff weight--></MTOW>
+        <MZFW units="kg" is_input="False">855<!--maximum zero fuel weight--></MZFW>
+        <OWE units="kg" is_input="False">580<!--Mass of aircraft--></OWE>
+        <ZFW units="kg" is_input="False">855</ZFW>
         <max_payload units="kg" is_input="False">420.0<!--max payload weight--></max_payload>
         <payload units="kg" is_input="False">355.0<!--design payload weight--></payload>
         <CG>
@@ -876,6 +899,9 @@
     </wing>
   </xfoil>
   <settings>
+    <electrical_system>
+      <system_voltage units="V" is_input="False">270</system_voltage>
+    </electrical_system>
     <handling_qualities>
       <rudder>
         <safety_margin is_input="True">0.2</safety_margin>

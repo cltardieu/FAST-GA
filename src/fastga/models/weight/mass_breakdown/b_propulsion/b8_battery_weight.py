@@ -32,7 +32,7 @@ class ComputeBatteryWeight(ExplicitComponent):
         self.add_input("data:geometry:hybrid_powertrain:battery:N_parallel", val=np.nan, units=None)
         self.add_input("data:geometry:hybrid_powertrain:battery:cell_mass", val=np.nan, units="kg")
 
-        self.add_output("data:weight:propulsion:battery:mass", units="kg")
+        self.add_output("data:weight:hybrid_powertrain:battery:mass", units="kg")
 
     def compute(self, inputs, outputs, discrete_inputs=None, discrete_outputs=None):
 

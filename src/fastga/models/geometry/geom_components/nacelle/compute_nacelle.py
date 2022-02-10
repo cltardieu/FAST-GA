@@ -22,7 +22,7 @@ import openmdao.api as om
 # noinspection PyProtectedMember
 from fastoad.module_management._bundle_loader import BundleLoader
 
-from fastga.models.propulsion.fuel_propulsion.base import FuelEngineSet
+from fastga.models.propulsion.hybrid_propulsion.base import HybridEngineSet
 
 from fastga.models.aerodynamics.constants import ENGINE_COUNT
 
@@ -54,14 +54,14 @@ class ComputeNacelleGeometry(om.ExplicitComponent):
         self.add_input("data:geometry:fuselage:maximum_width", val=np.nan, units="m")
         self.add_input("data:geometry:fuselage:length", val=np.nan, units="m")
         self.add_input("data:geometry:fuselage:rear_length", val=np.nan, units="m")
-        self.add_input("data:geometry:propeller:diameter", val=np.nan, units="m")
+        # self.add_input("data:geometry:propeller:diameter", val=np.nan, units="m")
 
         self.add_output("data:geometry:propulsion:nacelle:length", units="m")
         self.add_output("data:geometry:propulsion:nacelle:height", units="m")
         self.add_output("data:geometry:propulsion:nacelle:width", units="m")
         self.add_output("data:geometry:propulsion:nacelle:wet_area", units="m**2")
-        self.add_output("data:geometry:propulsion:propeller:depth", units="m")
-        self.add_output("data:geometry:propulsion:propeller:diameter", units="m")
+        # self.add_output("data:geometry:propulsion:propeller:depth", units="m")
+        # self.add_output("data:geometry:propulsion:propeller:diameter", units="m")
         self.add_output("data:geometry:landing_gear:height", units="m")
         self.add_output("data:geometry:propulsion:nacelle:y", shape=ENGINE_COUNT, units="m")
         self.add_output("data:geometry:propulsion:nacelle:x", shape=ENGINE_COUNT, units="m")
@@ -70,7 +70,7 @@ class ComputeNacelleGeometry(om.ExplicitComponent):
 
     def compute(self, inputs, outputs, discrete_inputs=None, discrete_outputs=None):
 
-        propulsion_model = FuelEngineSet(self._engine_wrapper.get_model(inputs), 1.0)
+        propulsion_model = HybridEngineSet(self._engine_wrapper.get_model(inputs), 1.0)
         prop_layout = inputs["data:geometry:propulsion:layout"]
         prop_count = inputs["data:geometry:propulsion:count"]
         span = inputs["data:geometry:wing:span"]

@@ -34,7 +34,7 @@ for folder in PATH[1 : len(PATH) - 3]:
     NOTEBOOKS_PATH = pth.join(NOTEBOOKS_PATH, folder)
 NOTEBOOKS_PATH = pth.join(NOTEBOOKS_PATH, "notebooks")
 
-AIRCRAFT_ID = ["sr22", "be76"]
+AIRCRAFT_ID = ["R200fc"]
 
 
 @pytest.fixture(scope="module")
@@ -111,8 +111,8 @@ def test_oad_process_openvsp(cleanup):
     logging.basicConfig(level=logging.WARNING)
 
     # Define used files depending on options
-    xml_file_name = "input_sr22.xml"
-    process_file_name = "oad_process_sr22_openvsp.yml"
+    xml_file_name = "input_R200fc.xml"
+    process_file_name = "oad_process_R200fc_openvsp.yml"
 
     configurator = FASTOADProblemConfigurator(pth.join(DATA_FOLDER_PATH, process_file_name))
 

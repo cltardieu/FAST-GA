@@ -35,7 +35,7 @@ class ComputeBoP(om.ExplicitComponent):
     """
 
     def setup(self):
-        """ Input dimensions refer to a single fuel cell stack if there are more than one. """
+        # Input dimensions refer to a single fuel cell stack if there are more than one.
         # self.add_input("data:geometry:hybrid_powertrain:fuel_cell:stack_volume", val=np.nan, units='L')
         self.add_input("data:geometry:hybrid_powertrain:fuel_cell:stack_length", val=0.490, units='m')
         self.add_input("data:geometry:hybrid_powertrain:fuel_cell:stack_width", val=0.155, units='m')
@@ -61,30 +61,17 @@ class ComputeBoP(om.ExplicitComponent):
         # pressure_reg_volume = inputs['data:geometry:hybrid_powertrain:bop:pressure_reg_volume']
         FITTING_FACTOR = inputs['data:geometry:hybrid_powertrain:bop:fitting_factor']
 
-        # """
-        # Determining FC system overhead volume. That includes :
-        #     - power cables
-        #     - tubing for gas and liquid flows
-        #     - casing and/or structural support
-        #     - sensors
-        #     - miscellaneous cooling equipments
-        # FC overhead is included in the Balance of Plant of the FC system and its volume is only provided for information.
-        # """
-        # fc_overhead_volume = FC_OVERHEAD * (stack_volume + compressor_volume + pressure_reg_volume)
-        # outputs['data:geometry:hybrid_powertrain:bop:fc_ss_volume'] = fc_overhead_volume
+        # Computing BoP dimensions based on stack dimensions.
+        # Since the compressor(s) and the heat exchanger are computed outside of the BoP and considering ratios between
+        # the dimensions of the PowerCellution V Stack sized for 30 kW and the Power Generation System 30, we assume
+        # that for the whole FC system, the BoP :
+        #     - increases length by 136 %
+        #     - increases width by 298 %
+        #     - increases height by 173 %
+        # Based on a comparison between the two following fuel cell stacks :
+        #     - https://www.datocms-assets.com/36080/1611437781-v-stack.pdf
+        #     - https://www.datocms-assets.com/36080/1636022163-power-generation-system-30-v221.pdf
 
-        """ 
-        Computing BoP dimensions based on stack dimensions.
-        Since the compressor(s) and the heat exchanger are computed outside of the BoP and considering ratios between 
-        the dimensions of the PowerCellution V Stack sized for 30 kW and the Power Generation System 30, we assume that 
-        for the whole FC system, the BoP : 
-            - increases length by 136 %
-            - increases width by 298 %
-            - increases height by 173 % 
-        Based on a comparison between the two following fuel cell stacks : 
-            - https://www.datocms-assets.com/36080/1611437781-v-stack.pdf
-            - https://www.datocms-assets.com/36080/1636022163-power-generation-system-30-v221.pdf
-        """
         L = 0.36 * stack_length * FITTING_FACTOR
         l = 1.98 * stack_width * FITTING_FACTOR
         h = 0.73 * stack_height * FITTING_FACTOR
@@ -92,3 +79,16 @@ class ComputeBoP(om.ExplicitComponent):
         outputs['data:geometry:hybrid_powertrain:bop:extra_length'] = L
         outputs['data:geometry:hybrid_powertrain:bop:extra_width'] = l
         outputs['data:geometry:hybrid_powertrain:bop:extra_height'] = h
+
+
+        ### Unused method
+        # Determining FC system overhead volume. That includes :
+        #     - power cables
+        #     - tubing for gas and liquid flows
+        #     - casing and/or structural support
+        #     - sensors
+        #     - miscellaneous cooling equipments
+        # FC overhead is included in the BoP of the FC system and its volume is only provided for information.
+        #
+        # fc_overhead_volume = FC_OVERHEAD * (stack_volume + compressor_volume + pressure_reg_volume)
+        # outputs['data:geometry:hybrid_powertrain:bop:fc_ss_volume'] = fc_overhead_volume

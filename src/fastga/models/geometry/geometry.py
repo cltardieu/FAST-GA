@@ -36,6 +36,8 @@ from fastga.models.geometry.geom_components.fuselage.compute_fuselage import (
 
 from fastga.models.options import CABIN_SIZING_OPTION, FUSELAGE_WET_AREA_OPTION
 
+from fastga.models.geometry.geom_components.hybrid_powertrain.compute_hybrid_powertrain import ComputeHybridPowertrain
+
 
 @RegisterOpenMDAOSystem("fastga.geometry.alternate", domain=ModelDomain.GEOMETRY)
 class GeometryFixedFuselage(om.Group):
@@ -108,9 +110,11 @@ class GeometryFixedTailDistance(om.Group):
             promotes=["*"],
         )
         self.add_subsystem("compute_wing", ComputeWingGeometry(), promotes=["*"])
+        self.add_subsystem("compute_hybrid_powertrain", ComputeHybridPowertrain(), promotes=["*"])
         self.add_subsystem(
             "compute_engine_nacelle",
             ComputeNacelleGeometry(propulsion_id=self.options["propulsion_id"]),
             promotes=["*"],
         )
         self.add_subsystem("compute_total_area", ComputeTotalArea(), promotes=["*"])
+

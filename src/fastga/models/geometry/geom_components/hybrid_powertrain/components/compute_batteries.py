@@ -83,7 +83,6 @@ class ComputeBatteries(om.ExplicitComponent):
         operating_time = TO_time + climbing_time + descent_time
 
         batt = battery.Battery(battery_type=battery_type,
-                               nb_packs=nb_packs,
                                in_current=input_current,
                                cell_diameter=cell_d,
                                cell_length=cell_l,
@@ -104,7 +103,7 @@ class ComputeBatteries(om.ExplicitComponent):
         N_series = batt.compute_nb_cells_ser()
         N_par = batt.compute_nb_cells_par()
         vol = batt.compute_pack_volume()
-        tot_vol = batt.compute_tot_volume()
+        tot_vol = nb_packs * vol
 
         outputs['data:geometry:hybrid_powertrain:battery:N_series'] = N_series
         outputs['data:geometry:hybrid_powertrain:battery:N_parallel'] = N_par

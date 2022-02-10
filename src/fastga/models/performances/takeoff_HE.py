@@ -33,7 +33,8 @@ ALPHA_LIMIT = 13.5 * math.pi / 180.0  # Limit angle to touch tail on ground in r
 ALPHA_RATE = 3.0 * math.pi / 180.0  # Angular rotation speed in rad/s
 SAFETY_HEIGHT = 50 * 0.3048  # Height in meters to reach V2 speed
 TIME_STEP = 0.1  # For time dependent simulation
-CLIMB_GRAD_AEO = 0.083  # Climb gradient when all engine are operating, based on CS23.65
+CLIMB_GRAD_AEO = 0.015  # Climb gradient when all engine are operating, based on minimal climb rate seen in 'First
+# Fuel-Cell Manned Aircraft', Nieves Lapeña-Rey
 POINTS_POWER_COUNT = 200
 
 _LOGGER = logging.getLogger(__name__)
@@ -526,8 +527,8 @@ class _simulate_takeoff(om.ExplicitComponent):
         self.add_output("data:mission:sizing:takeoff:TOFL", units="m")
         self.add_output("data:mission:sizing:takeoff:duration", units="s")
 
-        self.add_output("data:mission:sizing:takeoff:hydrogen", units="kg")
-        self.add_output("data:mission:sizing:initial_climb:hydrogen", units="kg")
+        self.add_output("data:mission:sizing:takeoff:fuel", units="kg")
+        self.add_output("data:mission:sizing:initial_climb:fuel", units="kg")
 
         self.add_output("data:mission:sizing:takeoff:battery_power", units='W')
         self.add_output("data:mission:sizing:initial_climb:battery_power", units='W')
@@ -541,12 +542,12 @@ class _simulate_takeoff(om.ExplicitComponent):
         self.add_output("data:mission:sizing:takeoff:battery_energy", units='kW*h')
         self.add_output("data:mission:sizing:initial_climb:battery_energy", units='kW*h')
 
-        self.add_output("data:mission:sizing:takeoff:battery_power_array", shape=POINTS_POWER_COUNT, units="W")
-        self.add_output("data:mission:sizing:takeoff:battery_time_array", shape=POINTS_POWER_COUNT, units="h")
-        self.add_output("data:mission:sizing:takeoff:battery_capacity_array", shape=POINTS_POWER_COUNT, units="A*h")
-        self.add_output("data:mission:sizing:initial_climb:battery_power_array", shape=POINTS_POWER_COUNT, units="W")
-        self.add_output("data:mission:sizing:initial_climb:battery_time_array", shape=POINTS_POWER_COUNT, units="h")
-        self.add_output("data:mission:sizing:initial_climb:battery_capacity_array", shape=POINTS_POWER_COUNT, units="A*h")
+        # self.add_output("data:mission:sizing:takeoff:battery_power_array", shape=POINTS_POWER_COUNT, units="W")
+        # self.add_output("data:mission:sizing:takeoff:battery_time_array", shape=POINTS_POWER_COUNT, units="h")
+        # self.add_output("data:mission:sizing:takeoff:battery_capacity_array", shape=POINTS_POWER_COUNT, units="A*h")
+        # self.add_output("data:mission:sizing:initial_climb:battery_power_array", shape=POINTS_POWER_COUNT, units="W")
+        # self.add_output("data:mission:sizing:initial_climb:battery_time_array", shape=POINTS_POWER_COUNT, units="h")
+        # self.add_output("data:mission:sizing:initial_climb:battery_capacity_array", shape=POINTS_POWER_COUNT, units="A*h")
 
         self.declare_partials("*", "*", method="fd")
 
@@ -729,8 +730,8 @@ class _simulate_takeoff(om.ExplicitComponent):
         outputs["data:mission:sizing:takeoff:TOFL"] = distance_t_ground + distance_t_airborne
         outputs["data:mission:sizing:takeoff:duration"] = time_t
 
-        outputs["data:mission:sizing:takeoff:hydrogen"] = mass_hyd1_t
-        outputs["data:mission:sizing:initial_climb:hydrogen"] = mass_hyd2_t
+        outputs["data:mission:sizing:takeoff:fuel"] = mass_hyd1_t
+        outputs["data:mission:sizing:initial_climb:fuel"] = mass_hyd2_t
 
         outputs["data:mission:sizing:takeoff:battery_power"] = power_takeoff
         outputs["data:mission:sizing:initial_climb:battery_power"] = power_init_climb
@@ -743,10 +744,10 @@ class _simulate_takeoff(om.ExplicitComponent):
 
         outputs["data:mission:sizing:takeoff:battery_energy"] = bat_energy_takeoff
         outputs["data:mission:sizing:initial_climb:battery_energy"] = bat_energy_init_climb
-
-        outputs["data:mission:sizing:takeoff:battery_power_array"] = takeoff_power
-        outputs["data:mission:sizing:initial_climb:battery_power_array"] = initial_climb_power
-        outputs["data:mission:sizing:takeoff:battery_time_array"] = takeoff_time
-        outputs["data:mission:sizing:initial_climb:battery_time_array"] = initial_climb_time
-        outputs["data:mission:sizing:takeoff:battery_capacity_array"] = takeoff_capacity
-        outputs["data:mission:sizing:initial_climb:battery_capacity_array"] = initial_climb_capacity
+        #
+        # outputs["data:mission:sizing:takeoff:battery_power_array"] = takeoff_power
+        # outputs["data:mission:sizing:initial_climb:battery_power_array"] = initial_climb_power
+        # outputs["data:mission:sizing:takeoff:battery_time_array"] = takeoff_time
+        # outputs["data:mission:sizing:initial_climb:battery_time_array"] = initial_climb_time
+        # outputs["data:mission:sizing:takeoff:battery_capacity_array"] = takeoff_capacity
+        # outputs["data:mission:sizing:initial_climb:battery_capacity_array"] = initial_climb_capacity

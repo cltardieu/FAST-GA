@@ -819,8 +819,8 @@ def test_compute_flight_points():
         0.90,
         20000,
         0.522,  # Hyd mass flow for 20 kW cruise power
-        2.2,
-        0.2,
+        2.2,  # PE
+        0.2,  # Cables_lsw
         3.048,  # Cirrus Beechcraft cabin length
         3,
         1.98,
@@ -844,7 +844,7 @@ def test_compute_flight_points():
     )  # with engine_setting as EngineSetting
     engine.compute_flight_points(flight_point)
     np.testing.assert_allclose(flight_point.thrust, 1621.4118, rtol=1e-2)
-    np.testing.assert_allclose(flight_point.sfc, 0., rtol=1e-3)
+    np.testing.assert_allclose(flight_point.sfc, 0.000322, rtol=1e-3)
     np.testing.assert_allclose(flight_point.battery_power, 23278, rtol=1000)
 
     # Test full arrays
@@ -856,9 +856,7 @@ def test_compute_flight_points():
     altitudes = [0, 0, 0, 1000, 2400]
     thrust_rates = [0.8, 0.5, 0.5, 0.4, 0.7]
     thrusts = [3193.97963124, 480.58508079, 480.58508079, 209.52130202, 339.32315391]
-    # # Reducing thrusts for an electric engine case
-    # RED_FACTOR = 3
-    # thrusts = [thrusts[i] / RED_FACTOR for i in range(len(thrusts))]
+
 
     engine_settings = [
         EngineSetting.TAKEOFF,
@@ -867,7 +865,7 @@ def test_compute_flight_points():
         EngineSetting.IDLE,
         EngineSetting.CRUISE,
     ]  # mix EngineSetting with integers
-    expected_sfc = [0., 0.000613, 0.000613, 0.001001, 0.000567, 0.000258, 0.001086, 0.001086, 0.002491, 0.001538]
+    expected_sfc = [0.000322, 0.000613, 0.000613, 0., 0.000567, 0.000258, 0.001086, 0.001086, 0., 0.001538]
     expected_bpower = [476.479086, 51739.729707, 51739.729707, 59309.554571, 79684.010533, 10286.190895, 23278.490324,
                          23278.490324, 28756.325811, 20529.653904]
     # Added expected thrust rates and thrusts to pass tests but need to fix the match between thrust and thrust rates

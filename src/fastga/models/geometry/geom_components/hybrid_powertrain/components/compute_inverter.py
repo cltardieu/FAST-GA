@@ -54,11 +54,11 @@ class ComputeInverter(om.ExplicitComponent):
         des_power = max_elec_load * (1 + AF) / eff
         outputs['data:propulsion:hybrid_powertrain:inverter:output_power'] = des_power
 
-        """ 
-        Sizing the inverter as a parallelepiped of default dimensions ratios :
-            Length = 2 * Width = 4 * Height 
-        (Arbitrary values chosen considering common dimensions for inverters).
-        """
+
+        # Sizing the inverter as a parallelepiped of default dimensions ratios :
+        #     Length = 2 * Width = 4 * Height
+        # (Arbitrary values chosen considering common dimensions for inverters).
+
         vol = des_power / 1000 / power_density  # [m**3]
         L = (L_to_h_ratio * L_to_l_ratio * vol) ** (1/3)
         l = L / L_to_l_ratio

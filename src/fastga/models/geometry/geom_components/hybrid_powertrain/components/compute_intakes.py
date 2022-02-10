@@ -111,7 +111,7 @@ class ComputeIntakes(om.ExplicitComponent):
         xi_scoop_ref = 1.7
         velocity_ratio_ref = 0.8
 
-        # Modifying to simulate a flush inlet with boundary layer control (meaning greater losses wwith same velocity
+        # Modifying to simulate a flush inlet with boundary layer control (meaning greater losses with same velocity
         # ratio but no external components)
         xi_flush = 2.5 * xi_scoop_ref  # 'Local' value
         velocity_ratio_flush = velocity_ratio_ref
@@ -152,46 +152,5 @@ class ComputeIntakes(om.ExplicitComponent):
         Cd_intakes = 2. * velocity_ratio_obstructor * (1 - velocity_ratio_nozzle)
         outputs['data:aerodynamics:intakes:CD0'] = Cd_intakes
 
-    # def inlet_loss(self):
-    #     # Results from experiments on scoops
-    #     xi_scoop_ref = 1.7
-    #     velocity_ratio_ref = 0.8
-    #
-    #     # Modifying to simulate a flush inlet with boundary layer control (meaning greater losses wwith same velocity
-    #     # ratio but no external components)
-    #     xi_flush = 2.5 * xi_scoop_ref  # 'Local' value
-    #     velocity_ratio_flush = velocity_ratio_ref
-    #
-    #     xi_inlet = xi_flush / (velocity_ratio_flush ** (2.0))
-    #
-    #     return xi_inlet
-    #
-    # def diffuser_loss(self, free_stream_speed, radiator_air_speed):
-    #     # 'Local' value of the total pressure losses, usually between 5.0 and 10.0
-    #     efficiency_diffuser = 0.97  # Assumed that we used a boundary layer control device
-    #     xi_diffuser_loc = 1. - efficiency_diffuser
-    #     velocity_ratio_diffuser = radiator_air_speed / free_stream_speed
-    #
-    #     xi_diffuser = xi_diffuser_loc / (velocity_ratio_diffuser ** (2.0))
-    #
-    #     return xi_diffuser
-    #
-    # def obstructor_loss(self, free_stream_speed, radiator_air_speed):
-    #     # 'Local' value of the total pressure losses, usually between 5.0 and 10.0
-    #     xi_obstructor_loc = 0.05
-    #     velocity_ratio_obstructor = radiator_air_speed / free_stream_speed
-    #
-    #     xi_obstructor = xi_obstructor_loc / (velocity_ratio_obstructor ** (2.0))
-    #
-    #     return xi_obstructor
-    #
-    # def outlet_losses(self, outlet_speed, free_stream_speed, radiator_air_speed):
-    #     """ Method computing outlet losses based on FAST-GA-AMPERE """
-    #     other_losses = self.inlet_loss() + self.diffuser_loss(free_stream_speed, radiator_air_speed) + self.obstructor_loss(free_stream_speed, radiator_air_speed)
-    #     outlet_velocity_ratio = outlet_speed / free_stream_speed
-    #     efficiency_nozzle = 0.90
-    #     to_solve = outlet_velocity_ratio ** (2.0) - 1. + other_losses + (
-    #                 1. - efficiency_nozzle) / outlet_velocity_ratio ** (2.0)
-    #     print(('outlet_speed'), outlet_speed, to_solve)
 
 

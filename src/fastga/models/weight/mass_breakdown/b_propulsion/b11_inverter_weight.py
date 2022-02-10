@@ -25,14 +25,14 @@ class ComputeInverterWeight(ExplicitComponent):
 
     def setup(self):
 
-        self.add_input("data:weight:hybrid_powertrain:inverter:specific_power", val=np.nan, units="W/kg")
+        self.add_input("data:propulsion:hybrid_powertrain:inverter:specific_power", val=np.nan, units="W/kg")
         self.add_input("data:propulsion:hybrid_powertrain:inverter:output_power", val=np.nan, units="W")
 
         self.add_output("data:weight:hybrid_powertrain:inverter:mass", units="kg")
 
     def compute(self, inputs, outputs, discrete_inputs=None, discrete_outputs=None):
 
-        spe_power = inputs['data:weight:hybrid_powertrain:inverter:specific_power']
+        spe_power = inputs['data:propulsion:hybrid_powertrain:inverter:specific_power']
         power = inputs['data:propulsion:hybrid_powertrain:inverter:output_power']
 
         b11 = power / spe_power

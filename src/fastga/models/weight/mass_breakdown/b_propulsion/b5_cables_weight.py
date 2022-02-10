@@ -29,19 +29,19 @@ class ComputeCablesWeight(ExplicitComponent):
 
     def setup(self):
 
-        self.add_input("data:propulsion:cables:lsw", val=np.nan, units="kg/km")
+        self.add_input("data:propulsion:hybrid_powertrain:cable:lsw", val=np.nan, units="kg/km")
         self.add_input("data:geometry:cabin:length", val=np.nan, units="m")
 
-        self.add_output("data:weight:propulsion:cables:mass", units="lb")
+        self.add_output("data:weight:hybrid_powertrain:cable:mass", units="lb")
 
         self.declare_partials("*", "*", method="fd")
 
     def compute(self, inputs, outputs, discrete_inputs=None, discrete_outputs=None):
 
-        length_spec_wt = inputs["data:propulsion:cables:lsw"]
+        length_spec_wt = inputs["data:propulsion:hybrid_powertrain:cable:lsw"]
         cabin_length = inputs["data:geometry:cabin:length"]
 
         b5 = 2 * 2.20462 * length_spec_wt * cabin_length / 1000 # mass has been multiplied by 2
         # to account for redundancy, this factor can be reduced as per the convenience of the designer
 
-        outputs["data:weight:hybrid_powertrain:cables:mass"] = b5
+        outputs["data:weight:hybrid_powertrain:cable:mass"] = b5

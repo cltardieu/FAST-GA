@@ -37,6 +37,13 @@ from fastga.models.weight.cg.cg_components.c_systems import (
     ComputeLifeSupportCG,
     ComputeNavigationSystemsCG,
 )
+
+from fastga.models.weight.cg.cg_components.b_propulsion import (
+    ComputeBatteryCG,
+    ComputeH2StorageCG,
+    ComputeFuelCellCG,
+)
+
 from fastga.models.weight.cg.cg_components.d_furniture import ComputePassengerSeatsCG
 from fastga.models.weight.cg.cg_components.payload import ComputePayloadCG
 from fastga.models.weight.cg.cg_components.global_cg import ComputeGlobalCG
@@ -58,13 +65,16 @@ class CG(om.Group):
         self.add_subsystem("flight_control_cg", ComputeFlightControlCG(), promotes=["*"])
         self.add_subsystem("landing_gear_cg", ComputeLandingGearCG(), promotes=["*"])
         self.add_subsystem("engine_cg", ComputeEngineCG(), promotes=["*"])
-        self.add_subsystem("fuel_lines_cg", ComputeTankCG(), promotes=["*"])
-        self.add_subsystem("tank_cg", ComputeFuelLinesCG(), promotes=["*"])
+        # self.add_subsystem("fuel_lines_cg", ComputeTankCG(), promotes=["*"])  # Proper to ICE engines
+        # self.add_subsystem("tank_cg", ComputeFuelLinesCG(), promotes=["*"])
         self.add_subsystem("power_systems_cg", ComputePowerSystemsCG(), promotes=["*"])
         self.add_subsystem("life_support_cg", ComputeLifeSupportCG(), promotes=["*"])
         self.add_subsystem("navigation_systems_cg", ComputeNavigationSystemsCG(), promotes=["*"])
         self.add_subsystem("passenger_seats_cg", ComputePassengerSeatsCG(), promotes=["*"])
         self.add_subsystem("payload_cg", ComputePayloadCG(), promotes=["*"])
+        self.add_subsystem("fuel_cells_cg", ComputeFuelCellCG(), promotes=["*"])
+        self.add_subsystem("battery_cg", ComputeBatteryCG(), promotes=["*"])
+        self.add_subsystem("h2_storage_cg", ComputeH2StorageCG(), promotes=["*"])
         self.add_subsystem(
             "compute_cg",
             ComputeGlobalCG(propulsion_id=self.options["propulsion_id"]),

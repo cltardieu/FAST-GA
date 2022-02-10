@@ -51,7 +51,6 @@ class Battery(object):
         - the second battery pack serves as an emergency backup in case the first one fails : _init_ parameters define
         the sizing of a single battery pack
     Based on :
-        https://www.researchgate.net/publication/319935703_A_Fuel_Cell_System_Sizing_Tool_Based_on_Current_Production_Aircraft
         https://commons.erau.edu/cgi/viewcontent.cgi?article=1392&context=edt
     """
 
@@ -74,7 +73,6 @@ class Battery(object):
             motor_eff: float,
             fc_power: float,
             battery_type: int,
-            nb_packs: int = 1
     ):
 
         if battery_type == 0:
@@ -95,7 +93,6 @@ class Battery(object):
             # self.i_cr = data['I_MAX']
             # self.co_V = data['V_CUT_OFF']
 
-        self.nb_packs = nb_packs
         self.i_in = in_current
         self.max_C_rate = max_C_rate
         self.int_resistance = int_resistance
@@ -124,6 +121,7 @@ class Battery(object):
         https://repository.tudelft.nl/islandora/object/uuid%3A6e274095-9920-4d20-9e11-d5b76363e709
         https://www.sciencedirect.com/science/article/pii/S0360319914031218
         This method computes the voltage of a cell given its time in operation.
+        Not used for now but may be more accurate than 'compute_V_cell'.
         """
         # Defining constants - Considering nominal battery parameters
         V0 = self.cell_nom_V  # [V] - Nominal voltage
@@ -165,15 +163,15 @@ class Battery(object):
         """
         Number of cells in parallel is sized in endurance.
         Battery packs are designed :
-            - to provide required additional power during take-off, climb, descent and landing (TO energy)
+            - to provide required additional power during take-off, climb, descent and landing durations (operation energy)
             - to provide fuel cell cruise power for 30 minutes in case of failure of the fuel cell system (back-up case)
         """
         BACKUP_TIME = 0.5  # [h]
         backup_energy = BACKUP_TIME * self.fc_power  # [Wh]
 
-        TO_energy = self.compute_required_power() * self.op_time / 3600  # [Wh]
+        operation_energy = self.compute_required_power() * self.op_time / 3600  # [Wh]
 
-        total_energy = backup_energy + TO_energy
+        total_energy = backup_energy + operation_energy
         nb_cells = math.ceil(total_energy / (self.cell_c * self.nom_voltage))
         return nb_cells
 
@@ -193,12 +191,6 @@ class Battery(object):
 
         V_pack = math.pi * self.cell_d ** 2 * self.cell_l * self.compute_nb_cells_ser() * self.compute_nb_cells_par() / (4 * eta * BATT_OVERHEAD)  # [m**3]
         return V_pack
-
-    def compute_tot_volume(self):
-        """
-        Computes the total volume of the battery pack(s).
-        """
-        return self.nb_packs * self.compute_pack_volume()
 
     def compute_weight(self):
         """ Based on https://commons.erau.edu/edt/393 """
