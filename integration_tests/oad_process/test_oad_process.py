@@ -78,28 +78,17 @@ def test_oad_process_vlm(cleanup):
         # Check that weight-performances loop correctly converged
         _check_weight_performance_loop(problem)
 
-        if aircraft_id == "sr22":
-            # noinspection PyTypeChecker
-            assert_allclose(problem.get_val("data:mission:sizing:fuel", units="kg"), 258.0, atol=1)
-            assert_allclose(
-                problem["data:handling_qualities:stick_fixed_static_margin"], 0.15, atol=1e-2
-            )
-            # noinspection PyTypeChecker
-            assert_allclose(problem.get_val("data:weight:aircraft:MTOW", units="kg"), 1620, atol=1)
-            # noinspection PyTypeChecker
-            assert_allclose(problem.get_val("data:weight:aircraft:OWE", units="kg"), 1002.0, atol=1)
-        else:
-            # noinspection PyTypeChecker
-            assert_allclose(problem.get_val("data:mission:sizing:fuel", units="kg"), 238.0, atol=1)
-            assert_allclose(
-                problem["data:handling_qualities:stick_fixed_static_margin"], 0.25, atol=1e-2
-            )
-            # noinspection PyTypeChecker
-            assert_allclose(
-                problem.get_val("data:weight:aircraft:MTOW", units="kg"), 1738.0, atol=1
-            )
-            # noinspection PyTypeChecker
-            assert_allclose(problem.get_val("data:weight:aircraft:OWE", units="kg"), 1110.0, atol=1)
+        # noinspection PyTypeChecker
+        assert_allclose(problem.get_val("data:mission:sizing:fuel", units="kg"), 5., atol=1)
+        # noinspection PyTypeChecker
+        assert_allclose(
+            problem.get_val("data:weight:aircraft:MTOW", units="kg"), 1331.0, atol=1
+        )
+        # noinspection PyTypeChecker
+        assert_allclose(problem.get_val("data:weight:aircraft:OWE", units="kg"), 971.0, atol=1)
+        assert_allclose(
+            problem["data:handling_qualities:stick_fixed_static_margin"], 0.25, atol=1e-2
+        )
 
 
 @pytest.mark.skipif(system() != "Windows", reason="OPENVSP is windows dependent platform")

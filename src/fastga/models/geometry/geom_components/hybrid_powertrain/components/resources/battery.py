@@ -64,7 +64,9 @@ class Battery(object):
             cell_mass: float,
             max_C_rate: float,
             int_resistance: float,
-            op_time: float,
+            TO_time: float,
+            climb_energy: float,
+            descent_energy: float,
             SOC: float,
             # current_limit: float,
             # cutoff_voltage: float,
@@ -96,7 +98,9 @@ class Battery(object):
         self.i_in = in_current
         self.max_C_rate = max_C_rate
         self.int_resistance = int_resistance
-        self.op_time = op_time
+        self.TO_time = TO_time
+        self.descent_energy = descent_energy
+        self.climb_energy = climb_energy
         self.SOC = SOC
         self.nom_voltage = sys_nom_voltage
         self.motor_TO_power = motor_TO_power
@@ -169,7 +173,7 @@ class Battery(object):
         BACKUP_TIME = 0.5  # [h]
         backup_energy = BACKUP_TIME * self.fc_power  # [Wh]
 
-        operation_energy = self.compute_required_power() * self.op_time / 3600  # [Wh]
+        operation_energy = self.compute_required_power() * self.TO_time / 3600 + self.climb_energy + self.descent_energy  # [Wh]
 
         total_energy = backup_energy + operation_energy
         nb_cells = math.ceil(total_energy / (self.cell_c * self.nom_voltage))

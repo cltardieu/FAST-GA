@@ -36,7 +36,8 @@ class ComputeH2Storage(om.ExplicitComponent):
         self.add_input("data:geometry:hybrid_powertrain:h2_storage:length_radius_ratio", val=np.nan, units=None)
         self.add_input("data:geometry:hybrid_powertrain:h2_storage:fos", val=2.25, units=None,
                        desc='Factor of safety defined by industry standard specifications')
-        self.add_input("data:geometry:hybrid_powertrain:h2_storage:maximum_stress", val=np.nan, units='Pa')
+        self.add_input("data:geometry:hybrid_powertrain:h2_storage:maximum_stress", val=np.nan, units='Pa',
+                       desc='Maximum stress allowed by the chosen material')
         # self.add_input("data:geometry:hybrid_powertrain:h2_storage:mass_fitting_factor", val=1, units=None,
         #                desc='Parameter to adjust the mass of the fuel tanks arguably too high')
         self.add_input("data:geometry:hybrid_powertrain:h2_storage:tank_density", val=np.nan, units='kg/m**3')
@@ -63,33 +64,33 @@ class ComputeH2Storage(om.ExplicitComponent):
         tank_lr_ratio = inputs['data:geometry:hybrid_powertrain:h2_storage:length_radius_ratio']  # length to radius
         FoS = inputs['data:geometry:hybrid_powertrain:h2_storage:fos']  # Factor of safety
         max_stress = inputs['data:geometry:hybrid_powertrain:h2_storage:maximum_stress']
-        density = inputs['data:geometry:hybrid_powertrain:h2_storage:tank_density']
+        # density = inputs['data:geometry:hybrid_powertrain:h2_storage:tank_density']
         # mass_fit = inputs['data:geometry:hybrid_powertrain:h2_storage:mass_fitting_factor']
 
         T_H = Atmosphere(altitude=0).temperature  # [K]
 
-        """ Determining total mass of hydrogen needed """
+        # Determining total mass of hydrogen needed
         F_H = required_power / (V_cell * 2 * 96500 * 500)  # [kg/s] - Flow rate of hydrogen
         m_H = op_time * F_H  # [kg]
 
-        """ Determining volume of hydrogen needed """
+        # Determining volume of hydrogen needed
         Z = 0.99704 + 6.4149e-9 * P_H  # Hydrogen compressibility factor
         R = 4157.2  # [Nm/(Kkg)]
         V_H = Z * R * m_H * T_H / P_H  # [m**3]
 
-        """ Determining internal radius-length of a single cylindrical tank """
+        # Determining internal radius-length of a single cylindrical tank
         V_tank_int = V_H / nb_tanks
         tank_radius = (V_tank_int / (tank_lr_ratio * math.pi)) ** (1 / 3)  # [m]
         tank_length = tank_lr_ratio * tank_radius  # [m]
 
-        """ Determining wall thickness and tank volume """
+        # Determining wall thickness and tank volume
         thickness = P_H * tank_radius * FoS / (2 * max_stress)  # [m]
         tank_ex_radius = tank_radius + thickness
         tank_ex_length = tank_length + 2 * thickness
         tank_volume = math.pi * (tank_ex_radius ** 2) * tank_ex_length  # [m**3]
         tot_tank_volume = tank_volume * nb_tanks  # [m**3]
 
-        """ Determining tank(s) mass : a fitting parameter is added to adjust the results """
+        # Determining tank(s) mass : a fitting parameter is added to adjust the results
         # tank_mass = (tank_volume - V_tank_int) * density * mass_fit  # [kg]
         # tot_tank_mass = nb_tanks * tank_mass
 

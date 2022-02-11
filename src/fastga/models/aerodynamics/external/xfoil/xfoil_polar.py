@@ -535,6 +535,7 @@ class XfoilPolar(ExternalCodeComp):
         :return: max CL within +/- 0.3 around linear zone if enough alpha computed, or default value otherwise
         """
         alpha_range = self.options[OPTION_ALPHA_END] - self.options[OPTION_ALPHA_START]
+        print("ALPHA =" + alpha)
         if len(alpha) > 2:
             covered_range = max(alpha) - min(alpha)
             if np.abs(covered_range / alpha_range) >= 0.4:

@@ -190,6 +190,7 @@ class _v2(om.ExplicitComponent):
             cd = cd0 + delta_cd_takeoff + coeff_k * cl ** 2.0
 
             climb_gradient = thrust / (mtow * g) - cd / cl
+            print(climb_gradient)
             if climb_gradient > CLIMB_GRAD_AEO:
                 break
             elif iteration_number < 100.0:

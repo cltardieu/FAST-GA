@@ -172,22 +172,24 @@ class FuelCell(object):
         # Defining constants
         M_H2 = 2.016  # [g/mol]
         stoich_ratio = self.data['HYD_STOICH_RATIO']  # Hydrogen stoichiometric ratio for the chosen FC
-        F = 96.485  # [C/mol] - Faraday Constant
+        F = 96485  # [C/mol] - Faraday Constant
 
-        hyd_mass_flow = M_H2 * self.required_power * stoich_ratio / (2 * self.compute_cell_V() * F)  # [g/s]
+        # hyd_mass_flow = M_H2 * self.required_power * stoich_ratio / (2 * self.compute_cell_V() * F)  # [g/s]
+        hyd_mass_flow = self.compute_nb_cell() * M_H2 * self.stack_current / (2 * F)  # [g/s]
         return hyd_mass_flow / 1000  # [kg/s]
 
     def compute_ox_mass_flow(self):
         """
-        Computes the hydrogen mass flow rate required by the FC stack given required power and average cell voltage.
+        Computes the oxygen mass flow rate required by the FC stack given required power and average cell voltage.
         Based on constructor data of the PowerCellution V Stack.
         """
         # Defining constants
         M_O2 = 31.998  # [g/mol]
         stoich_ratio = self.data['OX_STOICH_RATIO']  # Oxygen stoichiometric ratio for the chosen FC
-        F = 96.485  # [C/mol] - Faraday Constant
+        F = 96485  # [C/mol] - Faraday Constant
 
-        ox_mass_flow = M_O2 * self.required_power * stoich_ratio / (4 * self.compute_cell_V() * F)  # [g/s]
+        # ox_mass_flow = M_O2 * self.required_power * stoich_ratio / (4 * self.compute_cell_V() * F)  # [g/s]
+        ox_mass_flow = self.compute_nb_cell() * M_O2 * self.stack_current / (4 * F)  # [g/s]
         return ox_mass_flow / 1000  # [kg/s]
 
     def compute_ref_efficiency(self):

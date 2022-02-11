@@ -26,9 +26,6 @@ class ComputeElectricMotor(om.ExplicitComponent):
         1. "Exploring the design space for a hybrid-electric regional aircraft with multidisciplinary design
         optimisation methods", Jerome Thauvin
         2. "Estimation models for the preliminary design of electromechanical actuators" - Budinger, Marc et. al
-    UQM Power Phase 75 is used as the reference motor. See more details here :
-        'The Boeing Fuel Cell Demonstrator Airplane' - N. Lapeña-Rey, J. Mosquera, E. Bataller and F. Ortí
-        https://wiki.neweagle.net/ProductDocumentation/EV_Software_and_Hardware/Traction_Inverters/UQM/PowerPhase_75_HiTor_DataSheet.pdf
     """
 
     def __init__(self, **kwargs):

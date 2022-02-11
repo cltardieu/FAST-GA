@@ -46,8 +46,8 @@ class ComputeBatteries(om.ExplicitComponent):
         self.add_input("data:propulsion:hybrid_powertrain:motor:TO_power", val=np.nan, units="W")
         self.add_input("data:propulsion:hybrid_powertrain:fuel_cell:design_power", val=np.nan, units='W')
         self.add_input("data:mission:sizing:takeoff:duration", val=np.nan, units='s')
-        self.add_input("data:mission:sizing:main_route:climb:duration", val=np.nan, units='s')
-        self.add_input("data:mission:sizing:main_route:descent:duration", val=np.nan, units='s')
+        self.add_input("data:mission:sizing:main_route:climb:battery_energy", val=np.nan, units='W*h')
+        self.add_input("data:mission:sizing:main_route:descent:battery_energy", val=np.nan, units='W*h')
 
         self.add_output("data:geometry:hybrid_powertrain:battery:N_series", units=None)
         self.add_output("data:geometry:hybrid_powertrain:battery:N_parallel", units=None)
@@ -76,11 +76,8 @@ class ComputeBatteries(om.ExplicitComponent):
         TO_power = inputs['data:propulsion:hybrid_powertrain:motor:TO_power']
         fc_power = inputs['data:propulsion:hybrid_powertrain:fuel_cell:design_power']
         TO_time = inputs['data:mission:sizing:takeoff:duration']
-        climbing_time = inputs['data:mission:sizing:main_route:climb:duration']
-        descent_time = inputs['data:mission:sizing:main_route:descent:duration']
-
-        # Considering that battery is only used during TO, climbing and descent
-        operating_time = TO_time + climbing_time + descent_time
+        climb_energy = inputs['data:mission:sizing:main_route:climb:battery_energy']
+        descent_energy = inputs['data:mission:sizing:main_route:descent:battery_energy']
 
         batt = battery.Battery(battery_type=battery_type,
                                in_current=input_current,
@@ -91,7 +88,9 @@ class ComputeBatteries(om.ExplicitComponent):
                                cell_nom_volt=cell_nom_V,
                                max_C_rate=max_C_rate,
                                int_resistance=int_res,
-                               op_time=operating_time,
+                               TO_time=TO_time,
+                               descent_energy = descent_energy,
+                               climb_energy=climb_energy,
                                SOC=SOC,
                                # current_limit=current_limit,
                                # cutoff_voltage=cutoff_V,

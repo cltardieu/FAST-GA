@@ -42,12 +42,13 @@ class ComputeFuelCells(om.ExplicitComponent):
         self.add_output("data:propulsion:hybrid_powertrain:fuel_cell:design_current_density", units='A/cm**2')
         self.add_output("data:geometry:hybrid_powertrain:fuel_cell:number_cells", units=None,
                         desc="Total number of cells in the stack(s)")
-        self.add_output("data:geometry:hybrid_powertrain:fuel_cell:stack_height", units='m')
+        self.add_output("data:geometry:hybrid_powertrain:fuel_cell:stack_height", units='cm')
         self.add_output("data:geometry:hybrid_powertrain:fuel_cell:stack_volume", units='cm**3')
         self.add_output("data:propulsion:hybrid_powertrain:fuel_cell:cell_voltage", units='V')
         self.add_output("data:propulsion:hybrid_powertrain:fuel_cell:cooling_power", units='W')
         self.add_output("data:propulsion:hybrid_powertrain:fuel_cell:efficiency", units=None)
         self.add_output("data:propulsion:hybrid_powertrain:fuel_cell:ox_mass_flow", units="kg/s")
+        self.add_output('data:propulsion:hybrid_powertrain:fuel_cell:hyd_mass_flow', units="kg/s")
 
         self.declare_partials('*', '*', method="fd")
 
@@ -82,6 +83,8 @@ class ComputeFuelCells(om.ExplicitComponent):
         P_cooling = fc.compute_cooling_power()
         eff = fc.compute_ref_efficiency()
         ox_flow = fc.compute_ox_mass_flow()
+        hyd_flow = fc.compute_hyd_mass_flow()
+        current_density = fc.compute_design_current_density()
 
         outputs['data:propulsion:hybrid_powertrain:fuel_cell:design_power'] = design_power
         outputs['data:geometry:hybrid_powertrain:fuel_cell:number_cells'] = nb_cells
@@ -91,3 +94,5 @@ class ComputeFuelCells(om.ExplicitComponent):
         outputs['data:propulsion:hybrid_powertrain:fuel_cell:cooling_power'] = P_cooling
         outputs['data:propulsion:hybrid_powertrain:fuel_cell:efficiency'] = eff
         outputs['data:propulsion:hybrid_powertrain:fuel_cell:ox_mass_flow'] = ox_flow
+        outputs['data:propulsion:hybrid_powertrain:fuel_cell:hyd_mass_flow'] = hyd_flow
+        outputs['data:propulsion:hybrid_powertrain:fuel_cell:design_current_density'] = current_density

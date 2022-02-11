@@ -26,7 +26,7 @@ class ComputeBoPWeight(ExplicitComponent):
         self.add_input("data:propulsion:hybrid_powertrain:compressor:ref_mass", val=np.nan, units="kg")
         self.add_input("data:propulsion:hybrid_powertrain:compressor:ref_radius", val=np.nan, units="m")
         self.add_input("data:geometry:hybrid_powertrain:compressor:radius", val=np.nan, units="m")
-        self.add_input("data:geometry:hybrid_powertrain:hex:radiator_surface_density", val=np.nan, units='g/cm**2')
+        self.add_input("data:geometry:hybrid_powertrain:hex:radiator_surface_density", val=np.nan, units='kg/cm**2')
         self.add_input("data:geometry:hybrid_powertrain:hex:area", val=np.nan, units='m**2')
         self.add_input("data:weight:hybrid_powertrain:fuel_cell:mass", val=np.nan, units="kg")
 

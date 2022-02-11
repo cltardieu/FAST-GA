@@ -44,7 +44,7 @@ from fastga.models.weight.mass_breakdown.c_systems import (
 )
 from fastga.models.weight.mass_breakdown.d_furniture import ComputePassengerSeatsWeight
 from fastga.models.weight.mass_breakdown.payload import ComputePayload
-# from fastga.models.weight.mass_breakdown.update_mlw_and_mzfw import UpdateMLWandMZFW
+from fastga.models.weight.mass_breakdown.update_mlw_and_mzfw import UpdateMLWandMZFW
 
 from fastga.models.options import PAYLOAD_FROM_NPAX
 
@@ -76,7 +76,7 @@ class MassBreakdown(om.Group):
             ComputeOperatingWeightEmpty(propulsion_id=self.options["propulsion_id"]),
             promotes=["*"],
         )
-        # self.add_subsystem("update_mzfw_and_mlw", UpdateMLWandMZFW(), promotes=["*"])
+        self.add_subsystem("update_mzfw_and_mlw", UpdateMLWandMZFW(), promotes=["*"])
 
         # Solvers setup
         self.nonlinear_solver = om.NonlinearBlockGS()
@@ -169,7 +169,7 @@ class ComputeOperatingWeightEmpty(om.Group):
         hybrid_powertrain_sum.add_equation(
             "data:weight:propulsion:mass",
             [
-                "data:weight:propulsion:engine:mass",
+                "data:weight:hybrid_powertrain:engine:mass",
                 "data:weight:hybrid_powertrain:fuel_cell:mass",
                 "data:weight:hybrid_powertrain:battery:mass",
                 "data:weight:hybrid_powertrain:bop:total_mass",

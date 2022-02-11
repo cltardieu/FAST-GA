@@ -67,9 +67,9 @@ class Mission_HE(om.Group):
             _compute_taxi(propulsion_id=self.options["propulsion_id"], taxi_out=True, ),
             promotes=["*"],
         )
-        self.add_subsystem(
-            "takeoff", TakeOffPhase(propulsion_id=self.options["propulsion_id"]), promotes=["*"]
-        )
+        # self.add_subsystem(
+        #     "takeoff", TakeOffPhase(propulsion_id=self.options["propulsion_id"]), promotes=["*"]
+        # )
         self.add_subsystem(
             "climb",
             _compute_climb(
