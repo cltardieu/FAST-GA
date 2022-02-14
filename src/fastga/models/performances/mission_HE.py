@@ -121,7 +121,7 @@ class _compute_reserve(om.ExplicitComponent):
         self.add_input("data:mission:sizing:main_route:cruise:duration", np.nan, units="s")
         self.add_input("data:mission:sizing:main_route:reserve:duration", np.nan, units="s")
 
-        self.add_input("data:mission:sizing:main_route:reserve:battery_max_power", np.nan, units="kW")
+        self.add_input("data:mission:sizing:main_route:reserve:battery_power", np.nan, units="kW")
         self.add_input("settings:electrical_system:system_voltage", np.nan, units="V")
 
         self.add_output("data:mission:sizing:main_route:reserve:fuel", units="kg")
@@ -140,8 +140,8 @@ class _compute_reserve(om.ExplicitComponent):
         )
 
         energy_reserve = (
-                inputs["data:mission:sizing:main_route:reserve:battery_max_power"]
-                * inputs["data:mission:sizing:main_route:reserve:duration"]
+                inputs["data:mission:sizing:main_route:reserve:battery_power"]
+                * inputs["data:mission:sizing:main_route:reserve:duration"] / 3600
         )
 
         capacity_reserve = (
@@ -419,7 +419,9 @@ class _Atmosphere(Atmosphere):
 
 class _compute_taxi(om.ExplicitComponent):
     """
-    Compute the fuel consumption for taxi based on speed and duration.
+    Compute the fuel consumption and battery power and capacity for taxi based on speed and duration.
+    Since no 'TAXI' EngineSetting has been implemented IDLE setting is chosen for now
+    (meaning fuel cell nos used in this phase : maybe chose cruise phase instead).
     """
 
     def __init__(self, **kwargs):
@@ -477,7 +479,7 @@ class _compute_taxi(om.ExplicitComponent):
 
         # FIXME: no specific settings for taxi (to be changed in fastoad\constants.py)
         flight_point = FlightPoint(
-            mach=mach, altitude=0.0, engine_setting=EngineSetting.TAKEOFF, thrust_rate=thrust_rate
+            mach=mach, altitude=0.0, engine_setting=EngineSetting.IDLE, thrust_rate=thrust_rate
         )
         flight_point.add_field("battery_power", annotation_type=float)
         propulsion_model.compute_flight_points(flight_point)
@@ -494,9 +496,8 @@ class _compute_taxi(om.ExplicitComponent):
             # Compute the engine power during taxi and subsequently, the current, capacity and energy
             taxi_power = flight_point.battery_power
             battery_current = taxi_power / system_voltage
-            taxi_bat_capacity = battery_current * duration
-
-            bat_energy_taxi_out = propulsion_model.get_consumed_energy(flight_point, duration)  # kWh
+            taxi_bat_capacity = battery_current * duration / 3600
+            bat_energy_taxi_out = propulsion_model.get_consumed_energy(flight_point, duration / 3600) / 1000  # kWh
 
             if self.options["taxi_out"]:
                 outputs["data:mission:sizing:taxi_out:battery_power"] = taxi_power
@@ -699,7 +700,7 @@ class _compute_climb(DynamicEquilibrium):
             # Since the time step is in seconds and the energy should be computed in kWh, time step is divided by 3600
             bat_capacity += (flight_point.battery_power / system_voltage) * time_step / 3600
             climb_capacity.append((flight_point.battery_power / system_voltage) * time_step / 3600)
-            bat_energy_climb += propulsion_model.get_consumed_energy(flight_point, time_step / 3600)
+            bat_energy_climb += propulsion_model.get_consumed_energy(flight_point, time_step / 3600) / 1000  # [kWh]
             # time_t += time_step
 
             climb_time.append(time_t / 3600)
@@ -1090,11 +1091,11 @@ class _compute_descent(DynamicEquilibrium):
                 thrust = previous_step[1]
 
             # Compute consumption
-            # FIXME: DESCENT setting on engine does not exist, replaced by CLIMB for test
+            # FIXME: DESCENT setting on engine does not exist, replaced by IDLE for test
             flight_point = FlightPoint(
                 mach=mach,
                 altitude=altitude_t,
-                engine_setting=EngineSetting.CLIMB,
+                engine_setting=EngineSetting.IDLE,
                 thrust_is_regulated=True,
                 thrust=thrust,
             )
@@ -1141,11 +1142,9 @@ class _compute_descent(DynamicEquilibrium):
 
             descent_current.append(flight_point.battery_power / system_voltage)
             current_descent = max(descent_current)
-            bat_capacity_descent += (flight_point.battery_power / system_voltage) * time_step / 3600
+            bat_capacity_descent += (flight_point.battery_power / system_voltage) * time_step / 3600  # [Ah]
             descent_capacity.append((flight_point.battery_power / system_voltage) * time_step / 3600)
-
-            # Time step is divided by 3600 to compute the capacity in A*h
-            bat_energy_descent += propulsion_model.get_consumed_energy(flight_point, time_step / 3600)
+            bat_energy_descent += propulsion_model.get_consumed_energy(flight_point, time_step / 3600) / 1000  # [kWh]
             # Time step is divided by 3600 to compute the energy in kWh
             time_t += time_step
             descent_time.append(time_t / 3600)

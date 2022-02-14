@@ -16,10 +16,10 @@
 <FASTOAD_model>
   <data>
     <TLAR>
-      <NPAX_design is_input="True">2.0</NPAX_design>
-      <luggage_mass_design units="kg" is_input="True">35.0</luggage_mass_design>
+      <NPAX_design is_input="True">1.0</NPAX_design>
+      <luggage_mass_design units="kg" is_input="True">0</luggage_mass_design>
       <range units="km" is_input="True">100.0<!--top-level requirement: design range--></range>
-      <v_approach units="km/h" is_input="True">70.0</v_approach>
+      <v_approach units="km/h" is_input="True">80.0</v_approach>
       <v_cruise units="km/h" is_input="True">110</v_cruise>
       <v_limit units="km/h" is_input="True">160</v_limit>
       <v_max_sl units="km/h" is_input="True">160.0</v_max_sl>
@@ -53,7 +53,7 @@
         <aisle_width units="m" is_input="True">0.0<!--width of aisles--></aisle_width>
 <!--        <length units="m" is_input="False">2.8618916746684664&lt;!&ndash;cabin length&ndash;&gt;</length>-->
         <luggage>
-          <mass_max units="kg" is_input="True">60.0</mass_max>
+          <mass_max units="kg" is_input="True">40.0</mass_max>
         </luggage>
         <seats>
           <passenger>
@@ -613,7 +613,7 @@
             <fuel units="kg" is_input="False">0.648<!--mass of consumed fuel during cruise phase in sizing mission--></fuel>
           </cruise>
           <descent>
-            <descent_rate units="m/s" is_input="True">-0.7</descent_rate>
+            <descent_rate units="m/s" is_input="True">-1</descent_rate>
             <distance units="m" is_input="False">25000<!--covered ground distance during descent phase--></distance>
             <duration units="s" is_input="False">1506.9542966085064<!--duration of descent phase in sizing mission--></duration>
             <fuel units="kg" is_input="False">0<!--mass of consumed fuel during descent phase in sizing mission--></fuel>
@@ -621,8 +621,8 @@
           </descent>
           <reserve>
             <fuel units="kg" is_input="False">0.100</fuel>
-            <battery_max_power units="kW" is_input="False">35</battery_max_power>
-            <duration units="min" is_input="True">20</duration>
+            <battery_power units="kW" is_input="False">20</battery_power>
+            <duration units="min" is_input="True">18</duration>
           </reserve>
         </main_route>
       </sizing>
@@ -652,7 +652,7 @@
         </cable>
         <compressor>
           <motor_efficiency is_input="True">0.8</motor_efficiency>
-          <specific_work units="J/kg" is_input="True">2</specific_work>
+          <specific_work units="J/kg" is_input="True">0.5e-3</specific_work>
           <delta is_input="True">70</delta>
           <ref_mass units="kg" is_input="True">1.5</ref_mass>
           <ref_radius units="m" is_input="True">0.183</ref_radius>

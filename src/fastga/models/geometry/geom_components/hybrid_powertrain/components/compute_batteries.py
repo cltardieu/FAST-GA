@@ -48,6 +48,7 @@ class ComputeBatteries(om.ExplicitComponent):
         self.add_input("data:mission:sizing:takeoff:duration", val=np.nan, units='s')
         self.add_input("data:mission:sizing:main_route:climb:battery_energy", val=np.nan, units='W*h')
         self.add_input("data:mission:sizing:main_route:descent:battery_energy", val=np.nan, units='W*h')
+        self.add_input("data:mission:sizing:main_route:reserve:battery_energy", val=np.nan, units='W*h')
 
         self.add_output("data:geometry:hybrid_powertrain:battery:N_series", units=None)
         self.add_output("data:geometry:hybrid_powertrain:battery:N_parallel", units=None)
@@ -78,6 +79,7 @@ class ComputeBatteries(om.ExplicitComponent):
         TO_time = inputs['data:mission:sizing:takeoff:duration']
         climb_energy = inputs['data:mission:sizing:main_route:climb:battery_energy']
         descent_energy = inputs['data:mission:sizing:main_route:descent:battery_energy']
+        reserve_energy = inputs['data:mission:sizing:main_route:reserve:battery_energy']
 
         batt = battery.Battery(battery_type=battery_type,
                                in_current=input_current,
@@ -91,6 +93,7 @@ class ComputeBatteries(om.ExplicitComponent):
                                TO_time=TO_time,
                                descent_energy = descent_energy,
                                climb_energy=climb_energy,
+                               reserve_energy=reserve_energy,
                                SOC=SOC,
                                # current_limit=current_limit,
                                # cutoff_voltage=cutoff_V,

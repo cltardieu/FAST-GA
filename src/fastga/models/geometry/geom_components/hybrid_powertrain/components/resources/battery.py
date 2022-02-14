@@ -67,6 +67,7 @@ class Battery(object):
             TO_time: float,
             climb_energy: float,
             descent_energy: float,
+            reserve_energy: float,
             SOC: float,
             # current_limit: float,
             # cutoff_voltage: float,
@@ -101,6 +102,7 @@ class Battery(object):
         self.TO_time = TO_time
         self.descent_energy = descent_energy
         self.climb_energy = climb_energy
+        self.reserve_energy = reserve_energy
         self.SOC = SOC
         self.nom_voltage = sys_nom_voltage
         self.motor_TO_power = motor_TO_power
@@ -171,9 +173,12 @@ class Battery(object):
             - to provide fuel cell cruise power for 30 minutes in case of failure of the fuel cell system (back-up case)
         """
         BACKUP_TIME = 0.5  # [h]
-        backup_energy = BACKUP_TIME * self.fc_power  # [Wh]
+        # backup_energy = BACKUP_TIME * self.fc_power  # [Wh]
+        backup_energy = 0  # [Wh] - considering backup energy already taken in account in 'reserve' phase
 
-        operation_energy = self.compute_required_power() * self.TO_time / 3600 + self.climb_energy + self.descent_energy  # [Wh]
+        # operation_energy = self.compute_required_power() * self.TO_time / 3600 + self.climb_energy + self.descent_energy  # [Wh]
+        # To stay close to reference aircraft battery is sized considering reserve energy only
+        operation_energy = self.reserve_energy
 
         total_energy = backup_energy + operation_energy
         nb_cells = math.ceil(total_energy / (self.cell_c * self.nom_voltage))

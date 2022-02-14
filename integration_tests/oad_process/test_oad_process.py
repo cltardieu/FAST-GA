@@ -34,7 +34,7 @@ for folder in PATH[1 : len(PATH) - 3]:
     NOTEBOOKS_PATH = pth.join(NOTEBOOKS_PATH, folder)
 NOTEBOOKS_PATH = pth.join(NOTEBOOKS_PATH, "notebooks")
 
-AIRCRAFT_ID = ["R200fc"]
+AIRCRAFT_ID = ["HK36fc"]
 
 
 @pytest.fixture(scope="module")
@@ -79,15 +79,15 @@ def test_oad_process_vlm(cleanup):
         _check_weight_performance_loop(problem)
 
         # noinspection PyTypeChecker
-        assert_allclose(problem.get_val("data:mission:sizing:fuel", units="kg"), 5., atol=1)
+        assert_allclose(problem.get_val("data:mission:sizing:fuel", units="kg"), 1.521, atol=1e-2)
         # noinspection PyTypeChecker
         assert_allclose(
-            problem.get_val("data:weight:aircraft:MTOW", units="kg"), 1331.0, atol=1
+            problem.get_val("data:weight:aircraft:MTOW", units="kg"), 811.0, atol=1
         )
         # noinspection PyTypeChecker
-        assert_allclose(problem.get_val("data:weight:aircraft:OWE", units="kg"), 971.0, atol=1)
+        assert_allclose(problem.get_val("data:weight:aircraft:OWE", units="kg"), 729.0, atol=1)
         assert_allclose(
-            problem["data:handling_qualities:stick_fixed_static_margin"], 0.25, atol=1e-2
+            problem["data:handling_qualities:stick_fixed_static_margin"], 0.100, atol=1e-2
         )
 
 
@@ -100,8 +100,8 @@ def test_oad_process_openvsp(cleanup):
     logging.basicConfig(level=logging.WARNING)
 
     # Define used files depending on options
-    xml_file_name = "input_R200fc.xml"
-    process_file_name = "oad_process_R200fc_openvsp.yml"
+    xml_file_name = "input_HK36fc.xml"
+    process_file_name = "oad_process_HK36fc_openvsp.yml"
 
     configurator = FASTOADProblemConfigurator(pth.join(DATA_FOLDER_PATH, process_file_name))
 
