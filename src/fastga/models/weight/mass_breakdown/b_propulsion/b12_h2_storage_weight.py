@@ -26,8 +26,8 @@ class ComputeH2StorageWeight(ExplicitComponent):
         self.add_input("data:geometry:hybrid_powertrain:h2_storage:single_tank_volume", val=np.nan, units='m**3')
         self.add_input("data:geometry:hybrid_powertrain:h2_storage:tank_internal_volume", val=np.nan, units="m**3")
         self.add_input("data:geometry:hybrid_powertrain:h2_storage:tank_density", val=np.nan, units='kg/m**3')
-        self.add_input("data:geometry:hybrid_powertrain:h2_storage:mass_fitting_factor", val=1, units=None,
-                       desc='Parameter to adjust the mass of the fuel tanks arguably too high')
+        # self.add_input("data:geometry:hybrid_powertrain:h2_storage:mass_fitting_factor", val=1, units=None,
+        #                desc='Parameter to adjust the mass of the fuel tanks arguably too high')
 
         self.add_output("data:weight:hybrid_powertrain:h2_storage:mass", units="kg")
 
@@ -37,8 +37,8 @@ class ComputeH2StorageWeight(ExplicitComponent):
         tank_volume = inputs['data:geometry:hybrid_powertrain:h2_storage:single_tank_volume']
         int_volume = inputs['data:geometry:hybrid_powertrain:h2_storage:tank_internal_volume']
         density = inputs['data:geometry:hybrid_powertrain:h2_storage:tank_density']
-        mass_fit = inputs['data:geometry:hybrid_powertrain:h2_storage:mass_fitting_factor']
+        # mass_fit = inputs['data:geometry:hybrid_powertrain:h2_storage:mass_fitting_factor']
 
-        b12 = nb_tanks * (tank_volume - int_volume) * density * mass_fit  # [kg]
+        b12 = nb_tanks * (tank_volume - int_volume) * density  # [kg]
 
         outputs['data:weight:hybrid_powertrain:h2_storage:mass'] = b12

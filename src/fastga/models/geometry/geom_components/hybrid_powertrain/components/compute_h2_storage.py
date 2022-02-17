@@ -38,8 +38,8 @@ class ComputeH2Storage(om.ExplicitComponent):
                        desc='Factor of safety defined by industry standard specifications')
         self.add_input("data:geometry:hybrid_powertrain:h2_storage:maximum_stress", val=np.nan, units='Pa',
                        desc='Maximum stress allowed by the chosen material')
-        # self.add_input("data:geometry:hybrid_powertrain:h2_storage:mass_fitting_factor", val=1, units=None,
-        #                desc='Parameter to adjust the mass of the fuel tanks arguably too high')
+        self.add_input("data:geometry:hybrid_powertrain:h2_storage:thickness_fitting_factor", val=1, units=None,
+                       desc='Parameter to adjust the thickness of the fuel tanks (too low)')
         self.add_input("data:geometry:hybrid_powertrain:h2_storage:tank_density", val=np.nan, units='kg/m**3')
 
         self.add_output("data:geometry:hybrid_powertrain:h2_storage:total_tanks_volume", units='m**3',
@@ -65,7 +65,7 @@ class ComputeH2Storage(om.ExplicitComponent):
         FoS = inputs['data:geometry:hybrid_powertrain:h2_storage:fos']  # Factor of safety
         max_stress = inputs['data:geometry:hybrid_powertrain:h2_storage:maximum_stress']
         # density = inputs['data:geometry:hybrid_powertrain:h2_storage:tank_density']
-        # mass_fit = inputs['data:geometry:hybrid_powertrain:h2_storage:mass_fitting_factor']
+        t_fit = inputs['data:geometry:hybrid_powertrain:h2_storage:thickness_fitting_factor']
 
         T_H = Atmosphere(altitude=0).temperature  # [K]
 
@@ -84,14 +84,14 @@ class ComputeH2Storage(om.ExplicitComponent):
         tank_length = tank_lr_ratio * tank_radius  # [m]
 
         # Determining wall thickness and tank volume
-        thickness = P_H * tank_radius * FoS / (2 * max_stress)  # [m]
+        thickness = P_H * tank_radius * FoS / (2 * max_stress) * t_fit  # [m]
         tank_ex_radius = tank_radius + thickness
         tank_ex_length = tank_length + 2 * thickness
         tank_volume = math.pi * (tank_ex_radius ** 2) * tank_ex_length  # [m**3]
         tot_tank_volume = tank_volume * nb_tanks  # [m**3]
 
         # Determining tank(s) mass : a fitting parameter is added to adjust the results
-        # tank_mass = (tank_volume - V_tank_int) * density * mass_fit  # [kg]
+        # tank_mass = (tank_volume - V_tank_int) * density  # [kg]
         # tot_tank_mass = nb_tanks * tank_mass
 
         outputs['data:geometry:hybrid_powertrain:h2_storage:total_tanks_volume'] = tot_tank_volume

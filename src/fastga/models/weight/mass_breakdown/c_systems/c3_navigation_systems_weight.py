@@ -46,11 +46,14 @@ class ComputeNavigationSystemsWeight(ExplicitComponent):
         n_occ = n_pax + 2.0
         # The formula differs depending on the number of propeller on the engine
 
-        if n_eng == 1.0:
-            c3 = 33.0 * n_occ
+        # Forcing the usage of second formula for experimental fuel cell aircrafts - changed constant from 40 to 10 lb
+        # if n_eng == 1.0:
+        #     c3 = 33.0 * n_occ
+        #
+        # else:
+        #     c3 = 40 + 0.008 * mtow  # mass formula in lb
 
-        else:
-            c3 = 40 + 0.008 * mtow  # mass formula in lb
+        c3 = 10 + 0.008 * mtow  # mass formula in lb
 
         outputs["data:weight:systems:navigation:mass"] = c3
 

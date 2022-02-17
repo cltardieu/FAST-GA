@@ -70,53 +70,47 @@ class FuelCell(object):
 
     @staticmethod
     def compute_fc_weight(cell_number: int):
-        """
-        Computes the weight of the fuel cell stack(s) given the total number of cells.
-        It is assumed that weight can be described as a linear function of the number of cells with the parameters :
-            a = 0.1028153153153153
-            b = 8.762162162162165
-        Those parameters are based on data retrieved from the PowerCellution V Stack fuel cell :
-            https://www.datocms-assets.com/36080/1611437781-v-stack.pdf.
-        """
+        # Computes the weight of the fuel cell stack(s) given the total number of cells.
+        # It is assumed that weight can be described as a linear function of the number of cells with the parameters :
+        #     a = 0.1028153153153153
+        #     b = 8.762162162162165
+        # Those parameters are based on data retrieved from the PowerCellution V Stack fuel cell :
+        #     https://www.datocms-assets.com/36080/1611437781-v-stack.pdf.
+
         return cell_number * 0.103 + 8.762  # [kg]
 
     def compute_fc_height(self, cell_number: int):
-        """
-        Computes the height of a single fuel cell stack given the total number of cells and the number of stacks.
-        It is assumed that height can be described as a linear function of the number of cells of parameters :
-            a = 1.3907657657657655
-            b = 91.5081081081081
-        Those parameters are based on data retrieved from the PowerCellution V Stack fuel cell :
-            https://www.datocms-assets.com/36080/1611437781-v-stack.pdf.
-        """
+        # Computes the height of a single fuel cell stack given the total number of cells and the number of stacks.
+        # It is assumed that height can be described as a linear function of the number of cells of parameters :
+        #     a = 1.3907657657657655
+        #     b = 91.5081081081081
+        # Those parameters are based on data retrieved from the PowerCellution V Stack fuel cell :
+        #     https://www.datocms-assets.com/36080/1611437781-v-stack.pdf.
+
         stack_cell_nb = math.ceil(cell_number / self.nb_stacks)
         return (stack_cell_nb * 1.39 + 91.51) / 10  # [cm]
 
     def compute_fc_volume(self, cell_number: int):
-        """
-        Computes the volume of a single fuel cell stack given the total number of cells and considering constructor data
-        for the reference fuel cell Power Cellution V Stack :
-            https://www.datocms-assets.com/36080/1611437781-v-stack.pdf.
-        """
+        # Computes the volume of a single fuel cell stack given the total number of cells and considering constructor data
+        # for the reference fuel cell Power Cellution V Stack :
+        #     https://www.datocms-assets.com/36080/1611437781-v-stack.pdf.
+
         vol = self.stack_area * self.compute_fc_height(cell_number)
         return vol  # [cm**3]
 
     def compute_design_power(self):
-        """
-        Computes the total required power of the fuel cell system.
-        """
+        # Computes the total required power of the fuel cell system.
+
         return self.compressor_power + self.required_power  # [W]
 
     def compute_design_current_density(self):
-        """
-        Computes the current density of the fuel cell system.
-        """
+        # Computes the current density of the fuel cell system.
+
         return self.stack_current / self.stack_area
 
     def compute_nb_cell(self):
-        """
-        Computes the number of cell needed considering design power of the FC system.
-        """
+        # Computes the number of cell needed considering design power of the FC system.
+
         # Determining one cell's design power
         P_cell_des = self.stack_current * self.compute_cell_V()
 
@@ -128,12 +122,11 @@ class FuelCell(object):
         return N_fc
 
     def compute_cell_V(self):
-        """
-        Computes the voltage in a cell considering the polarization curve model found here :
-            https://repository.tudelft.nl/islandora/object/uuid%3A6e274095-9920-4d20-9e11-d5b76363e709
-        First 3 parameters were adjusted to fit the i-V curve of the Power Cellution V Stack.
-        + add a curve_fitting option to adjust to another type of fuel cell ?
-        """
+        # Computes the voltage in a cell considering the polarization curve model found here :
+        #     https://repository.tudelft.nl/islandora/object/uuid%3A6e274095-9920-4d20-9e11-d5b76363e709
+        # First 3 parameters were adjusted to fit the i-V curve of the Power Cellution V Stack.
+        # + add a curve_fitting option to adjust to another type of fuel cell ?
+
         # Defining the fitting parameters of the polarization curve - first 3 values are modified
         V0 = 0.64  # [V]
         B = 2.4 * 0.014  # [V/ln(A/cm**2)]
@@ -150,25 +143,17 @@ class FuelCell(object):
         return V
 
     def compute_cooling_power(self):
-        """
-        Computes the cooling power needed considering required power and assuming that what is not delivered as
-        electricity is produced as heat.
-        Based on the work done in FAST-GA-AMPERE.
-        """
-        # H2_ed = 34100.0  # [Wh/kg] - Hydrogen energy density
-        # H2_mass_flow = self.compute_hyd_mass_flow()  # [kg/s]
-        # eff = self.compute_ref_efficiency()
-        #
-        # P_cooling = (H2_mass_flow * 3600.0 * H2_ed) * (1.0 - eff)
+        # Computes the cooling power needed considering required power and assuming that what is not delivered as
+        # electricity is produced as heat.
+        # Based on the work done in FAST-GA-AMPERE.
 
         P_cooling = self.compute_design_power() / self.compute_ref_efficiency() - self.compute_design_power()
         return P_cooling
 
     def compute_hyd_mass_flow(self):
-        """
-        Computes the hydrogen mass flow rate required by the FC stack given required power and average cell voltage.
-        Based on constructor data of the PowerCellution V Stack.
-        """
+        # Computes the hydrogen mass flow rate required by the FC stack given required power and average cell voltage.
+        # Based on constructor data of the PowerCellution V Stack.
+
         # Defining constants
         M_H2 = 2.016  # [g/mol]
         stoich_ratio = self.data['HYD_STOICH_RATIO']  # Hydrogen stoichiometric ratio for the chosen FC
@@ -179,10 +164,9 @@ class FuelCell(object):
         return hyd_mass_flow / 1000  # [kg/s]
 
     def compute_ox_mass_flow(self):
-        """
-        Computes the oxygen mass flow rate required by the FC stack given required power and average cell voltage.
-        Based on constructor data of the PowerCellution V Stack.
-        """
+        # Computes the oxygen mass flow rate required by the FC stack given required power and average cell voltage.
+        # Based on constructor data of the PowerCellution V Stack.
+        #
         # Defining constants
         M_O2 = 31.998  # [g/mol]
         stoich_ratio = self.data['OX_STOICH_RATIO']  # Oxygen stoichiometric ratio for the chosen FC
@@ -193,13 +177,12 @@ class FuelCell(object):
         return ox_mass_flow / 1000  # [kg/s]
 
     def compute_ref_efficiency(self):
-        """
-        Calculates the efficiency of the fuel cell system : calculations are based on reference data for the Power
-        Generation System 30 : https://www.datocms-assets.com/36080/1611437727-power-generation-system-30.pdf
-        Curve parameters were determined beforehand for this fuel cell.
-        Constructor data is provided for currents between 50 and 200 A so outside of these values, efficiency should not
-        be computed.
-        """
+        # Calculates the efficiency of the fuel cell system : calculations are based on reference data for the Power
+        # Generation System 30 : https://www.datocms-assets.com/36080/1611437727-power-generation-system-30.pdf
+        # Curve parameters were determined beforehand for this fuel cell.
+        # Constructor data is provided for currents between 50 and 200 A so outside of these values, efficiency should not
+        # be computed.
+
         # Defining net_power/I linear regression coefficients
         a = 0.136
         b = 2.786
@@ -212,10 +195,9 @@ class FuelCell(object):
         return eff
 
     def compute_efficiency(self):
-        """
-        Calculates the efficiency of the fuel cell system using a more generic formula.
-        Not used at the moment because provides very low values.
-        """
+        # Calculates the efficiency of the fuel cell system using a more generic formula.
+        # Not used at the moment because provides very low values.
+
         # Defining constants
         H2_ed = 34100.0  # [Wh/kg] - Hydrogen energy density
 

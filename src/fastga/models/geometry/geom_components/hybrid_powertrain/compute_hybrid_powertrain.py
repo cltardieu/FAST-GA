@@ -22,7 +22,8 @@ from .components import (
     ComputeFuelCells,
     ComputeH2Storage,
     ComputeHex,
-    ComputeInverter
+    ComputeInverter,
+    ComputeIntakes
 )
 
 
@@ -33,6 +34,7 @@ class ComputeHybridPowertrain(om.Group):
         self.add_subsystem("compute_compressor", ComputeCompressor(), promotes=["*"])
         self.add_subsystem("compute_bop", ComputeBoP(), promotes=["*"])
         self.add_subsystem("compute_hex", ComputeHex(), promotes=["*"])
+        self.add_subsystem("compute_intakes", ComputeIntakes(), promotes=["*"])
         self.add_subsystem("compute_batteries", ComputeBatteries(), promotes=["*"])
         self.add_subsystem("compute_inverter", ComputeInverter(), promotes=["*"])
         self.add_subsystem("compute_electric_motor", ComputeElectricMotor(), promotes=["*"])

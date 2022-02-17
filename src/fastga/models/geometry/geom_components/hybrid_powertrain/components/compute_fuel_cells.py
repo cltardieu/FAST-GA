@@ -62,10 +62,9 @@ class ComputeFuelCells(om.ExplicitComponent):
         fc_type = inputs['data:propulsion:hybrid_powertrain:fuel_cell:fc_type']
         nb_stacks = inputs['data:geometry:hybrid_powertrain:fuel_cell:number_stacks']
 
-        """
-        Creating a FuelCell instance on which all computing methods will be called. This instance encapsulates the 
-        computation of all the fuel cell stacks if there are more than 1. 
-        """
+        # Creating a FuelCell instance on which all computing methods will be called. This instance encapsulates the
+        # computation of all the fuel cell stacks if there are more than 1.
+
         fc = FuelCell(stack_current=design_current,
                       required_power=required_power,
                       compressor_power=compressor_power,

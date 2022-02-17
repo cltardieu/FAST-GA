@@ -199,7 +199,7 @@ class UpdateResources(om.ExplicitComponent):
         self.add_input("data:mission:sizing:main_route:reserve:battery_energy", np.nan, units="kW*h")
         self.add_input("data:mission:sizing:main_route:descent:battery_energy", np.nan, units="kW*h")
         self.add_input("data:mission:sizing:taxi_in:battery_energy", np.nan, units="kW*h")
-        self.add_input("settings:electrical_system:SOC_in_reserve", 0, units=None)
+        self.add_input("settings:electrical_system:SOC_in_reserve", 1, units=None)
         self.add_input("data:mission:sizing:end_of_mission:SOC", 0.2, units=None)
 
         self.add_output("data:mission:sizing:fuel", val=0.0, units="kg")
@@ -258,7 +258,7 @@ class UpdateResources(om.ExplicitComponent):
         energy_initial_climb = inputs["data:mission:sizing:initial_climb:battery_energy"]
         energy_climb = inputs["data:mission:sizing:main_route:climb:battery_energy"]
         # energy_cruise = inputs["data:mission:sizing:main_route:cruise:battery_energy"]
-        energy_reserve = inputs["data:mission:sizing:main_route:reserve:battery_energy"]
+        # energy_reserve = inputs["data:mission:sizing:main_route:reserve:battery_energy"]
         energy_descent = inputs["data:mission:sizing:main_route:descent:battery_energy"]
         energy_taxi_in = inputs["data:mission:sizing:taxi_in:battery_energy"]
 
@@ -271,7 +271,7 @@ class UpdateResources(om.ExplicitComponent):
                 + energy_initial_climb
                 + energy_climb
                 # + energy_cruise
-                + energy_reserve
+                # + energy_reserve
                 + energy_descent
                 + energy_taxi_in
         )

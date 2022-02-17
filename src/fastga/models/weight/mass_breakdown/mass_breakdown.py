@@ -174,7 +174,6 @@ class ComputeOperatingWeightEmpty(om.Group):
                 "data:weight:hybrid_powertrain:battery:mass",
                 "data:weight:hybrid_powertrain:bop:total_mass",
                 "data:weight:hybrid_powertrain:inverter:mass",
-                "data:weight:hybrid_powertrain:battery:mass",
                 "data:weight:hybrid_powertrain:h2_storage:mass",
             ],
             units="kg",

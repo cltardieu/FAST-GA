@@ -50,10 +50,9 @@ class ComputeIntakes(om.ExplicitComponent):
         self.declare_partials('*', '*', method="fd")
 
     def compute(self, inputs, outputs, discrete_inputs=None, discrete_outputs=None):
-        """
-        A NACA inlet is used as reference for the sizing of the intakes.
-        See https://www.researchgate.net/publication/303312026_Numerical_Study_of_the_Performance_Improvement_of_Submerged_Air_Intakes_Using_Vortex_Generators
-        """
+        # A NACA inlet is used as reference for the sizing of the intakes.
+        # See https://www.researchgate.net/publication/303312026_Numerical_Study_of_the_Performance_Improvement_of_Submerged_Air_Intakes_Using_Vortex_Generators
+
         hex_area = inputs['data:geometry:hybrid_powertrain:hex:area']
         air_speed = inputs['data:propulsion:hybrid_powertrain:hex:air_speed']
         nb_cooling_intakes = inputs['data:geometry:hybrid_powertrain:cooling_intake:nb_intakes']
@@ -77,7 +76,7 @@ class ComputeIntakes(om.ExplicitComponent):
         outputs['data:geometry:hybrid_powertrain:fc_intake:width'] = w
         outputs['data:geometry:hybrid_powertrain:fc_intake:depth'] = d
 
-        """ Cooling system air supply """
+        # Cooling system air supply
         # Defining constants
         gamma = 1.4
         r = 287
@@ -102,7 +101,7 @@ class ComputeIntakes(om.ExplicitComponent):
         outputs['data:geometry:hybrid_powertrain:cooling_intake:width'] = w_hex
         outputs['data:geometry:hybrid_powertrain:cooling_intake:depth'] = d_hex
 
-        """ Computing intakes additional drag - Based on FAST-GA-AMPERE """
+        # Computing intakes additional drag - Based on FAST-GA-AMPERE
 
         initial_outlet_velocity = free_stream_speed / 2.0
 
@@ -137,7 +136,7 @@ class ComputeIntakes(om.ExplicitComponent):
         tot_losses = xi_inlet + xi_diffuser + xi_obstructor
 
         def outlet_losses(outlet_speed):
-            """ Method computing outlet losses based on FAST-GA-AMPERE """
+            # Method computing outlet losses based on FAST-GA-AMPERE
             outlet_velocity_ratio = outlet_speed / free_stream_speed
             efficiency_nozzle = 0.90
             return outlet_velocity_ratio ** 2 - 1. + tot_losses + (1. - efficiency_nozzle) / outlet_velocity_ratio ** 2
